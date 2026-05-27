@@ -241,6 +241,16 @@ th.sort-desc::after{content:' ↓';opacity:1;color:var(--bmid)}
   transition:opacity .2s;z-index:100;display:flex;align-items:center;gap:6px}
 .go-top.visible{opacity:1;pointer-events:auto}
 .go-top:hover{opacity:.85}
+
+/* RIGHT-CLICK CONTEXT MENU */
+.ctx-menu{position:fixed;background:var(--surface);border:1px solid var(--border-s);
+  border-radius:var(--rad);box-shadow:0 4px 20px rgba(0,0,0,.15);z-index:500;
+  min-width:160px;padding:4px 0;display:none}
+.ctx-menu.open{display:block}
+.ctx-item{display:flex;align-items:center;gap:8px;padding:8px 14px;font-size:13px;
+  color:var(--text);cursor:pointer;font-family:'DM Sans',sans-serif}
+.ctx-item:hover{background:var(--surface2)}
+.ctx-divider{height:1px;background:var(--border);margin:4px 0}
 ::-webkit-scrollbar{width:5px;height:5px}
 ::-webkit-scrollbar-track{background:transparent}
 ::-webkit-scrollbar-thumb{background:rgba(0,0,0,.15);border-radius:3px}
@@ -252,46 +262,57 @@ th.sort-desc::after{content:' ↓';opacity:1;color:var(--bmid)}
 <div class="shell">
 <!-- ===== SIDEBAR ===== -->
 <nav class="sidebar">
-  <div class="logo-wrap">
-    <div class="logo-icon">
-      <svg width="20" height="20" fill="none" stroke="#18181e" stroke-width="2" viewBox="0 0 24 24"><path d="M3 9l9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"/><polyline points="9 22 9 12 15 12 15 22"/></svg>
+  <div class="logo-wrap" style="cursor:pointer" onclick="switchPage('dashboard',document.querySelector('.nav-btn'))" title="Go to Dashboard">
+    <!-- UC logo inverted for dark sidebar: white square + dark UC text -->
+    <div style="display:flex;align-items:center;gap:10px;margin-bottom:10px">
+      <div style="width:38px;height:38px;background:#ffffff;border-radius:9px;display:flex;align-items:center;justify-content:center;flex-shrink:0">
+        <span style="font-size:14px;font-weight:800;color:#18181e;letter-spacing:-.5px;font-family:'DM Sans',sans-serif">UC</span>
+      </div>
+      <div style="line-height:1.25">
+        <div style="font-size:13px;font-weight:600;color:#f0efe8">Urban</div>
+        <div style="font-size:13px;font-weight:600;color:#f0efe8">Company</div>
+      </div>
     </div>
-    <div class="logo-title">Inventory Anchor</div>
-    <div class="logo-sub">Gurgaon WH · Delhi City (GGN · LJP · NOI)</div>
+    <div style="font-size:12px;font-weight:500;color:#c8c7c0">Inventory Anchor</div>
+    <div style="font-size:10px;color:#6b6b77;margin-top:2px">Dark Stores for Spares</div>
+    <div class="logo-sub" style="margin-top:3px">Delhi NCR · GGN · LJP · NOI</div>
   </div>
-
   <div class="nav-section">Overview</div>
-  <button class="nav-btn active" onclick="switchPage('dashboard',this)" title="Dashboard">
+  <button class="nav-btn active" onclick="switchPage('dashboard',this)" oncontextmenu="showCtxMenu(event,'dashboard')" title="Dashboard">
     <svg fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><rect x="3" y="3" width="7" height="7" rx="1"/><rect x="14" y="3" width="7" height="7" rx="1"/><rect x="3" y="14" width="7" height="7" rx="1"/><rect x="14" y="14" width="7" height="7" rx="1"/></svg>
     Dashboard
     <span class="nav-badge nbadge-red" id="nb-crit" style="display:none"></span>
   </button>
-  <button class="nav-btn" onclick="switchPage('reorder',this)" title="Reorder Queue">
+  <button class="nav-btn" onclick="switchPage('reorder',this)" oncontextmenu="showCtxMenu(event,'reorder')" title="Reorder Queue">
     <svg fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><polyline points="23 4 23 10 17 10"/><path d="M20.49 15a9 9 0 1 1-2.12-9.36L23 10"/></svg>
     Reorder Queue
     <span class="nav-badge nbadge-amber" id="nb-warn" style="display:none"></span>
   </button>
 
   <div class="nav-section">Stock</div>
-  <button class="nav-btn" onclick="switchPage('facility',this)" title="Facility Inventory">
+  <button class="nav-btn" onclick="switchPage('facility',this)" oncontextmenu="showCtxMenu(event,'facility')" title="Facility Inventory">
     <svg fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><rect x="1" y="3" width="15" height="13" rx="1"/><polygon points="16 8 20 8 23 11 23 16 16 16 16 8"/><circle cx="5.5" cy="18.5" r="2.5"/><circle cx="18.5" cy="18.5" r="2.5"/></svg>
     Facility View
   </button>
-  <button class="nav-btn" onclick="switchPage('inventory',this)" title="Inventory Table">
+  <button class="nav-btn" onclick="switchPage('inventory',this)" oncontextmenu="showCtxMenu(event,'inventory')" title="Inventory Table">
     <svg fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path d="M9 5H7a2 2 0 0 0-2 2v12a2 2 0 0 0 2 2h10a2 2 0 0 0 2-2V7a2 2 0 0 0-2-2h-2"/><rect x="9" y="3" width="6" height="4" rx="1"/></svg>
     Inventory Table
   </button>
-  <button class="nav-btn" onclick="switchPage('update',this)" title="Update Stock">
+  <button class="nav-btn" onclick="switchPage('update',this)" oncontextmenu="showCtxMenu(event,'update')" title="Update Stock">
     <svg fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"/><path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"/></svg>
     Update Stock
   </button>
 
   <div class="nav-section">Settings</div>
-  <button class="nav-btn" onclick="switchPage('consumption',this)" title="Consumption Rates">
+  <button class="nav-btn" onclick="openAddFacility()" title="Add Facility">
+    <svg fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path d="M3 9l9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"/><line x1="12" y1="12" x2="12" y2="18"/><line x1="9" y1="15" x2="15" y2="15"/></svg>
+    Add Facility
+  </button>
+  <button class="nav-btn" onclick="switchPage('consumption',this)" oncontextmenu="showCtxMenu(event,'consumption')" title="Consumption Rates">
     <svg fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><polyline points="22 12 18 12 15 21 9 3 6 12 2 12"/></svg>
     Consumption Rates
   </button>
-  <button class="nav-btn" onclick="switchPage('skus',this)" title="Manage SKUs">
+  <button class="nav-btn" onclick="switchPage('skus',this)" oncontextmenu="showCtxMenu(event,'skus')" title="Manage SKUs">
     <svg fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><line x1="8" y1="6" x2="21" y2="6"/><line x1="8" y1="12" x2="21" y2="12"/><line x1="8" y1="18" x2="21" y2="18"/><line x1="3" y1="6" x2="3.01" y2="6"/><line x1="3" y1="12" x2="3.01" y2="12"/><line x1="3" y1="18" x2="3.01" y2="18"/></svg>
     Manage SKUs
   </button>
@@ -307,7 +328,6 @@ th.sort-desc::after{content:' ↓';opacity:1;color:var(--bmid)}
   <span id="sync-status" style="font-size:11px;font-weight:500;margin-right:4px"></span>
   <span style="font-size:12px;color:var(--faint)" id="last-updated"></span>
   <button class="btn btn-sm" onclick="testConnection()" style="font-size:11px;padding:5px 10px">🔗 Test Sheet</button>
-  <button class="btn btn-sm btn-primary" onclick="openAddSku()">+ Add SKU</button>
 </div>
 
 <div class="content" id="main-content">
@@ -674,6 +694,60 @@ th.sort-desc::after{content:' ↓';opacity:1;color:var(--bmid)}
   Back to top
 </button>
 </div><!-- .shell -->
+<div class="ctx-menu" id="ctx-menu">
+  <div class="ctx-item" id="ctx-open-tab">
+    <svg width="13" height="13" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path d="M18 13v6a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h6"/><polyline points="15 3 21 3 21 9"/><line x1="10" y1="14" x2="21" y2="3"/></svg>
+    Open in new tab
+  </div>
+  <div class="ctx-item" onclick="closeCtxMenu()">
+    <svg width="13" height="13" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>
+    Cancel
+  </div>
+</div>
+
+
+<!-- ADD FACILITY MODAL -->
+<div class="modal-overlay" id="modal-add-fac">
+  <div class="modal">
+    <div class="modal-header">
+      <span class="modal-title">Add New Facility</span>
+      <button class="modal-close" onclick="closeModal('modal-add-fac')">&times;</button>
+    </div>
+    <div class="modal-form-grid">
+      <div class="form-group mfg-full">
+        <label>Facility Name *</label>
+        <input id="fac-name" placeholder="e.g. Saket Dark Store">
+      </div>
+      <div class="form-group mfg-full">
+        <label>Facility Code *</label>
+        <input id="fac-code" placeholder="e.g. HH-DS-APP-SKT" style="font-family:'DM Mono',monospace;text-transform:uppercase" oninput="this.value=this.value.toUpperCase()">
+      </div>
+      <div class="form-group">
+        <label>Type</label>
+        <select id="fac-type">
+          <option value="dark-store">Dark Store</option>
+          <option value="warehouse">Warehouse</option>
+          <option value="city-office">City Office</option>
+        </select>
+      </div>
+      <div class="form-group">
+        <label>City</label>
+        <select id="fac-city-select" onchange="onFacCityChange()">
+          <option value="Delhi NCR">Delhi NCR</option>
+          <option value="__new__">+ Add new city…</option>
+        </select>
+      </div>
+      <div class="form-group mfg-full" id="fac-new-city-group" style="display:none">
+        <label>New City Name</label>
+        <input id="fac-new-city" placeholder="e.g. Mumbai">
+      </div>
+    </div>
+    <div class="modal-footer">
+      <button class="btn" onclick="closeModal('modal-add-fac')">Cancel</button>
+      <button class="btn btn-primary" onclick="saveNewFacility()">Add Facility</button>
+    </div>
+  </div>
+</div>
 
 <!-- ADD SKU MODAL -->
 <div class="modal-overlay" id="modal-add">
@@ -713,14 +787,16 @@ th.sort-desc::after{content:' ↓';opacity:1;color:var(--bmid)}
 // ─────────────────────────────────────────────
 // DATA
 // ─────────────────────────────────────────────
-const STORES=['DS1','DS2','DS3'],LOCS=['WH','DS1','DS2','DS3'];
-const NAMES={WH:'Gurgaon Warehouse',DS1:'Gurgaon',DS2:'Lajpat Nagar',DS3:'Noida'};
-const CITIES={WH:'Delhi NCR',DS1:'Delhi NCR',DS2:'Delhi NCR',DS3:'Delhi NCR'};
-const FACILITY_TYPE={WH:'warehouse',DS1:'dark-store',DS2:'dark-store',DS3:'dark-store'};
-const facilityActive={WH:true,DS1:true,DS2:true,DS3:true};
+let STORES=['DS1','DS2','DS3'];
+let LOCS=['WH','DS1','DS2','DS3'];
+let NAMES={WH:'Gurgaon Warehouse',DS1:'Gurgaon',DS2:'Lajpat Nagar',DS3:'Noida'};
+let CODES={WH:'HH-WH-APP-GGN',DS1:'HH-DS-APP-GGN',DS2:'HH-DS-APP-LJP',DS3:'HH-DS-APP-NOI'};
+let CITIES={WH:'Delhi NCR',DS1:'Delhi NCR',DS2:'Delhi NCR',DS3:'Delhi NCR'};
+let FACILITY_TYPE={WH:'warehouse',DS1:'dark-store',DS2:'dark-store',DS3:'dark-store'};
+let facilityActive={WH:true,DS1:true,DS2:true,DS3:true};
+let customCities=['Delhi NCR']; // grows when user adds a new city
 let invSort={col:null,dir:1};   // inventory table sort
 let facSort={col:null,dir:1};   // facility view sort
-const CODES={WH:'HH-WH-APP-GGN',DS1:'HH-DS-APP-GGN',DS2:'HH-DS-APP-LJP',DS3:'HH-DS-APP-NOI'};
 
 // ─── GOOGLE SHEETS SYNC CONFIG ───────────────────────────
 // Paste your Apps Script Web App URL here after deploying
@@ -2019,6 +2095,16 @@ function renderFacilityHealth(){
         <div class="health-info"><div class="health-name">Gurgaon Warehouse<span style="font-size:10px;color:var(--faint);font-weight:400;margin-left:6px">HH-WH-APP-GGN</span></div><div class="health-sub">${t.toLocaleString()} total units</div></div>
         <span class="badge badge-info">Buffer</span></div>`;
     }
+    const isActive = facilityActive[loc];
+    if (!isActive) {
+      return`<div class="health-item" style="opacity:.45">
+        <div class="health-dot" style="background:var(--faint)"></div>
+        <div class="health-info">
+          <div class="health-name">${NAMES[loc]}<span style="font-size:10px;color:var(--faint);font-weight:400;margin-left:6px">${CODES[loc]||''}</span></div>
+        </div>
+        <span class="badge" style="background:var(--surface2);color:var(--faint);border:1px solid var(--border)">Inactive</span>
+      </div>`;
+    }
     const sa=getAlerts().filter(a=>a.store===loc);
     const crit=sa.filter(a=>a.status==='crit').length,warn=sa.filter(a=>a.status==='warn').length;
     const h=crit>0?'crit':warn>0?'warn':'ok';
@@ -2029,7 +2115,7 @@ function renderFacilityHealth(){
     return`<div class="health-item">
       <div class="health-dot" style="background:${dotC}"></div>
       <div class="health-info">
-        <div class="health-name">${NAMES[loc]}<span style="font-size:10px;color:var(--faint);font-weight:400;margin-left:6px">${CODES[loc]}</span></div>
+        <div class="health-name">${NAMES[loc]}<span style="font-size:10px;color:var(--faint);font-weight:400;margin-left:6px">${CODES[loc]||''}</span></div>
         <div class="health-sub">Avg DOI ${avg}d · ${crit} critical, ${warn} warnings</div>
         <div class="progress-track"><div class="progress-fill" style="width:${pct}%;background:${dotC}"></div></div>
       </div>
@@ -3010,8 +3096,239 @@ function onReoCityFilter() {
   renderReorder();
 }
 
+// ─────────────────────────────────────────────
+// CONTEXT MENU (right-click on sidebar)
+// ─────────────────────────────────────────────
+let ctxTargetPage = null;
+
+function showCtxMenu(e, page) {
+  e.preventDefault();
+  ctxTargetPage = page;
+  const menu = document.getElementById('ctx-menu');
+  menu.style.left = e.clientX + 'px';
+  menu.style.top  = e.clientY + 'px';
+  menu.classList.add('open');
+  document.getElementById('ctx-open-tab').onclick = function() {
+    window.open(location.href.split('#')[0] + '#' + ctxTargetPage, '_blank');
+    closeCtxMenu();
+  };
+}
+
+function closeCtxMenu() {
+  const m = document.getElementById('ctx-menu');
+  if (m) m.classList.remove('open');
+}
+
+if(document.addEventListener){
+  document.addEventListener('click', function() { closeCtxMenu(); });
+  document.addEventListener('keydown', function(e) { if(e.key==='Escape') closeCtxMenu(); });
+}
+
+// ─────────────────────────────────────────────
+// SHEET PERSISTENCE: FACILITY STATUS
+// ─────────────────────────────────────────────
+async function saveFacilityStatus() {
+  if (!SYNC_ENABLED()) return;
+  try {
+    await sheetGet({
+      action: 'saveSettings',
+      settings: { facilityActive: facilityActive, customFacilities: getCustomFacilities() }
+    });
+  } catch(e) { console.warn('Could not persist facility status:', e.message); }
+}
+
+async function loadFacilityStatus() {
+  if (!SYNC_ENABLED()) return;
+  try {
+    const json = await sheetGet({ action: 'loadSettings' });
+    if (json && json.ok && json.data) {
+      // Restore facility active states
+      if (json.data.facilityActive) {
+        Object.entries(json.data.facilityActive).forEach(([k, v]) => {
+          facilityActive[k] = v;
+        });
+      }
+      // Restore custom facilities
+      if (json.data.customFacilities && json.data.customFacilities.length) {
+        json.data.customFacilities.forEach(function(f) {
+          addFacilityToApp(f.key, f.name, f.code, f.city, f.type, false);
+        });
+      }
+      renderFacilityStatusBar();
+      renderAll();
+    }
+  } catch(e) { console.warn('Could not load settings:', e.message); }
+}
+
+function getCustomFacilities() {
+  // Return facilities beyond the original 4
+  const originals = ['WH','DS1','DS2','DS3'];
+  return LOCS.filter(l => !originals.includes(l)).map(l => ({
+    key: l, name: NAMES[l], code: CODES[l], city: CITIES[l], type: FACILITY_TYPE[l]
+  }));
+}
+
+// Patch toggleFacility to persist
+const _origToggleFacility = toggleFacility;
+function toggleFacility(loc) {
+  facilityActive[loc] = !facilityActive[loc];
+  logStockUpdate(loc, 0, 'system', NAMES[loc] + ' marked ' + (facilityActive[loc] ? 'ACTIVE' : 'INACTIVE'));
+  saveFacilityStatus(); // persist to Sheet
+  renderFacilityStatusBar();
+  renderAll();
+  toast(NAMES[loc] + ' marked ' + (facilityActive[loc] ? 'Active ✓' : 'Inactive ✗'));
+}
+
+// ─────────────────────────────────────────────
+// ADD FACILITY
+// ─────────────────────────────────────────────
+function openAddFacility() {
+  // Populate city dropdown with current cities
+  const sel = document.getElementById('fac-city-select');
+  if (sel) {
+    const cities = [...new Set(Object.values(CITIES))].sort();
+    sel.innerHTML = cities.map(c => `<option value="${c}">${c}</option>`).join('') +
+                    '<option value="__new__">+ Add new city…</option>';
+  }
+  document.getElementById('modal-add-fac').classList.add('open');
+}
+
+function onFacCityChange() {
+  const sel = document.getElementById('fac-city-select');
+  const grp = document.getElementById('fac-new-city-group');
+  if (sel && grp) grp.style.display = sel.value === '__new__' ? 'flex' : 'none';
+}
+
+function addFacilityToApp(key, name, code, city, type, persist) {
+  if (LOCS.includes(key)) return; // already exists
+  // Add to all data structures
+  LOCS.push(key);
+  if (type !== 'warehouse') STORES.push(key);
+  NAMES[key]         = name;
+  CODES[key]         = code;
+  CITIES[key]        = city;
+  FACILITY_TYPE[key] = type || 'dark-store';
+  facilityActive[key] = true;
+  // Add to inventory and consumption for all SKUs
+  skus.forEach(s => {
+    if (!inventory[s.id][key]) inventory[s.id][key] = 0;
+    if (!consumption[s.id][key]) consumption[s.id][key] = consumption[s.id]['DS1'] || 0;
+  });
+  // Add new city to filter if not present
+  if (!customCities.includes(city)) customCities.push(city);
+  // Rebuild dynamic UI sections
+  rebuildFacilityTabs();
+  rebuildFacilityFilters();
+  if (persist !== false) saveFacilityStatus();
+}
+
+function saveNewFacility() {
+  const name = (document.getElementById('fac-name').value || '').trim();
+  const code = (document.getElementById('fac-code').value || '').trim().toUpperCase();
+  // Auto-generate key from code (strip non-alphanumeric, take last segment)
+  const codeRaw = code.replace(/[^A-Z0-9]/g,'');
+  const key = codeRaw.slice(-4) || ('FAC' + Date.now().toString().slice(-4));
+  const type = document.getElementById('fac-type').value;
+  const cityEl = document.getElementById('fac-city-select');
+  let city = cityEl ? cityEl.value : 'Delhi NCR';
+  if (city === '__new__') {
+    city = (document.getElementById('fac-new-city').value || '').trim();
+    if (!city) { toast('Enter a city name'); return; }
+  }
+  if (!name || !code) { toast('Fill in Facility Name and Code'); return; }
+  if (LOCS.includes(key))  { toast('Facility key already exists: ' + key); return; }
+  addFacilityToApp(key, name, code, city, type, true);
+  closeModal('modal-add-fac');
+  renderAll();
+  toast('Facility added: ' + name);
+}
+
+function rebuildFacilityTabs() {
+  // Facility View tabs
+  const facTabsEl = document.getElementById('facility-tabs');
+  if (facTabsEl) {
+    facTabsEl.innerHTML = LOCS.map((loc, i) => {
+      const icon = FACILITY_TYPE[loc] === 'warehouse' ? '🏭' : '🏪';
+      return `<button class="ftab${i===0?' active':''}" onclick="switchFacility('${loc}',this)">
+        ${icon} ${NAMES[loc]}<span style="display:block;font-size:9px;opacity:.6;font-weight:400">${CODES[loc]||''}</span>
+      </button>`;
+    }).join('');
+  }
+  // Update Stock tabs
+  const updContainer = document.getElementById('upd-tab-WH');
+  if (updContainer && updContainer.parentNode) {
+    const parent = updContainer.parentNode;
+    parent.innerHTML = LOCS.map((loc, i) => {
+      const icon = FACILITY_TYPE[loc] === 'warehouse' ? '🏭' : '🏪';
+      const isFirst = i === 0;
+      return `<button class="ftab${isFirst?' active':''}" id="upd-tab-${loc}"
+        onclick="switchUpdateFacility('${loc}',this)"
+        style="${isFirst?'background:var(--surface2);':''}border-radius:7px;border:1px solid var(--border)">
+        ${icon} ${NAMES[loc]}<span style="display:block;font-size:9px;opacity:.55;font-weight:400">${CODES[loc]||''}</span>
+      </button>`;
+    }).join('');
+  }
+  // Excel import tabs
+  const xlsTabWH = document.getElementById('xls-tab-WH');
+  if (xlsTabWH && xlsTabWH.parentNode) {
+    const parent = xlsTabWH.parentNode;
+    parent.innerHTML = LOCS.map((loc, i) => {
+      const icon = FACILITY_TYPE[loc] === 'warehouse' ? '🏭' : '🏪';
+      return `<button class="ftab${i===0?' active':''}" id="xls-tab-${loc}"
+        onclick="selectXlsFacility('${loc}',this)"
+        style="border-radius:7px;border:1px solid var(--border)">
+        ${icon} ${NAMES[loc]}<span style="display:block;font-size:9px;opacity:.55;font-weight:400">${CODES[loc]||''}</span>
+      </button>`;
+    }).join('');
+  }
+  // Transfer dropdowns
+  const fromEl = document.getElementById('xfr-from');
+  const toEl   = document.getElementById('xfr-to');
+  if (fromEl) fromEl.innerHTML = LOCS.map(l => `<option value="${l}">${NAMES[l]}</option>`).join('');
+  if (toEl)   toEl.innerHTML   = LOCS.map(l => `<option value="${l}">${NAMES[l]}</option>`).join('');
+  // Single SKU facility dropdown
+  const singleFac = document.getElementById('single-facility');
+  if (singleFac) singleFac.innerHTML = LOCS.map(l => `<option value="${l}">${NAMES[l]}</option>`).join('');
+}
+
+function rebuildFacilityFilters() {
+  // Inventory table store filter
+  const invStore = document.getElementById('inv-store');
+  if (invStore) {
+    invStore.innerHTML = '<option value="all">All Facilities</option>' +
+      LOCS.map(l => `<option value="${l}">${NAMES[l]}</option>`).join('');
+  }
+  // Inventory city filter
+  const invCity = document.getElementById('inv-city');
+  if (invCity) {
+    const cities = [...new Set(Object.values(CITIES))].sort();
+    invCity.innerHTML = '<option value="all">All Cities</option>' +
+      cities.map(c => `<option value="${c}">${c}</option>`).join('');
+  }
+  // Reorder filter
+  const reoFilter = document.getElementById('reo-filter');
+  if (reoFilter) {
+    reoFilter.innerHTML = '<option value="all">All Stores</option>' +
+      STORES.map(l => `<option value="${l}">${NAMES[l]}</option>`).join('');
+  }
+  // Alert facility filter
+  const alertFac = document.getElementById('alert-filter-fac');
+  if (alertFac) {
+    alertFac.innerHTML = '<option value="all">All Facilities</option>' +
+      LOCS.map(l => `<option value="${l}">${NAMES[l]}</option>`).join('');
+  }
+  // Alert city filter
+  const alertCity = document.getElementById('alert-filter-city');
+  if (alertCity) {
+    const cities = [...new Set(Object.values(CITIES))].sort();
+    alertCity.innerHTML = '<option value="all">All Cities</option>' +
+      cities.map(c => `<option value="${c}">${c}</option>`).join('');
+  }
+}
+
 renderAll();
 loadFromSheet();
+loadFacilityStatus();
 
 // Go to top
 (function(){
