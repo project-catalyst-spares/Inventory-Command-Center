@@ -214,6 +214,17 @@ tr:hover td{background:#fafaf8}
 .transfer-arrow{display:flex;align-items:center;justify-content:center;color:var(--bmid);font-size:18px;grid-column:1/-1}
 .store-stock-badge{display:inline-flex;align-items:center;gap:4px;font-size:11px;font-family:'DM Mono',monospace;font-weight:600;padding:2px 8px;border-radius:4px;background:var(--bbg);color:var(--blue);margin-top:4px}
 
+
+/* FACILITY ACTIVE/INACTIVE */
+.facility-status-bar{display:flex;align-items:center;gap:10px;padding:.6rem 1rem;background:var(--surface2);border-radius:var(--rad);margin-bottom:1rem;font-size:12px;flex-wrap:wrap}
+.facility-status-item{display:flex;align-items:center;gap:6px}
+.fac-toggle{position:relative;display:inline-flex;align-items:center;cursor:pointer;gap:6px;font-size:12px;font-weight:500;padding:4px 10px;border-radius:20px;border:1px solid var(--border);background:var(--surface);transition:all .15s;user-select:none}
+.fac-toggle.active-fac{background:var(--gbg);color:var(--green);border-color:var(--gmid)}
+.fac-toggle.inactive-fac{background:var(--rbg);color:var(--red);border-color:var(--rmid);opacity:.7}
+.fac-toggle .fac-dot{width:7px;height:7px;border-radius:50%}
+.fac-toggle.active-fac .fac-dot{background:var(--gmid)}
+.fac-toggle.inactive-fac .fac-dot{background:var(--rmid)}
+
 ::-webkit-scrollbar{width:5px;height:5px}
 ::-webkit-scrollbar-track{background:transparent}
 ::-webkit-scrollbar-thumb{background:rgba(0,0,0,.15);border-radius:3px}
@@ -230,7 +241,7 @@ tr:hover td{background:#fafaf8}
       <svg width="20" height="20" fill="none" stroke="#18181e" stroke-width="2" viewBox="0 0 24 24"><path d="M3 9l9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"/><polyline points="9 22 9 12 15 12 15 22"/></svg>
     </div>
     <div class="logo-title">Inventory HQ</div>
-    <div class="logo-sub">HH-WH-APP-GGN · GGN · LJP · NOI</div>
+    <div class="logo-sub">Gurgaon WH · Delhi City (GGN · LJP · NOI)</div>
   </div>
 
   <div class="nav-section">Overview</div>
@@ -275,7 +286,7 @@ tr:hover td{background:#fafaf8}
 <div class="topbar">
   <div style="flex:1">
     <div class="topbar-title" id="topbar-title">Dashboard</div>
-    <div class="topbar-sub" id="topbar-sub">Pilot: DS1 · 151 days · Dec 26 2025 → May 25 2026</div>
+    <div class="topbar-sub" id="topbar-sub">Gurgaon Warehouse · Delhi City · 298 SKUs</div>
   </div>
   <span id="sync-status" style="font-size:11px;font-weight:500;margin-right:4px"></span>
   <span style="font-size:12px;color:var(--faint)" id="last-updated"></span>
@@ -287,6 +298,7 @@ tr:hover td{background:#fafaf8}
 
 <!-- ── DASHBOARD ── -->
 <div class="page active" id="page-dashboard">
+  <div class="facility-status-bar" id="fac-status-bar"></div>
   <div class="metric-grid" id="metric-grid"></div>
   <div class="grid2">
     <div class="card">
@@ -309,7 +321,7 @@ tr:hover td{background:#fafaf8}
 <!-- ── FACILITY VIEW ── -->
 <div class="page" id="page-facility">
   <div class="facility-tabs" id="facility-tabs">
-    <button class="ftab active" onclick="switchFacility('WH',this)">🏭 Warehouse<span style="display:block;font-size:9px;opacity:.6;font-weight:400">HH-WH-APP-GGN</span></button>
+    <button class="ftab active" onclick="switchFacility('WH',this)">🏭 Gurgaon Warehouse<span style="display:block;font-size:9px;opacity:.6;font-weight:400">HH-WH-APP-GGN</span></button>
     <button class="ftab" onclick="switchFacility('DS1',this)">🏪 Gurgaon<span style="display:block;font-size:9px;opacity:.6;font-weight:400">HH-DS-APP-GGN</span></button>
     <button class="ftab" onclick="switchFacility('DS2',this)">🏪 Lajpat Nagar<span style="display:block;font-size:9px;opacity:.6;font-weight:400">HH-DS-APP-LJP</span></button>
     <button class="ftab" onclick="switchFacility('DS3',this)">🏪 Noida<span style="display:block;font-size:9px;opacity:.6;font-weight:400">HH-DS-APP-NOI</span></button>
@@ -349,11 +361,17 @@ tr:hover td{background:#fafaf8}
 <!-- ── INVENTORY TABLE ── -->
 <div class="page" id="page-inventory">
   <div class="filter-row">
+    <select id="inv-city" onchange="onCityFilter()">
+      <option value="all">All Cities</option>
+      <option value="Gurgaon">Gurgaon</option>
+      <option value="Delhi">Delhi</option>
+    </select>
     <select id="inv-store" onchange="renderInventory()">
-      <option value="all">All Locations</option>
-      <option value="DS1">Gurgaon (GGN)</option>
-      <option value="DS2">Lajpat Nagar (LJP)</option>
-      <option value="DS3">Noida (NOI)</option>
+      <option value="all">All Facilities</option>
+      <option value="WH">Gurgaon Warehouse</option>
+      <option value="DS1">Gurgaon</option>
+      <option value="DS2">Lajpat Nagar</option>
+      <option value="DS3">Noida</option>
     </select>
     <select id="inv-status" onchange="renderInventory()">
       <option value="all">All Status</option>
@@ -386,7 +404,7 @@ tr:hover td{background:#fafaf8}
     <div style="margin-bottom:1rem">
       <p style="font-size:12px;font-weight:500;color:var(--muted);margin-bottom:.5rem">Step 1 — Select the facility this stock count is for:</p>
       <div style="display:flex;gap:6px;flex-wrap:wrap">
-        <button class="ftab active" id="xls-tab-WH"  onclick="selectXlsFacility('WH',this)"  style="background:var(--surface2);border-radius:7px;border:1px solid var(--border)">🏭 Warehouse<span style="display:block;font-size:9px;opacity:.55;font-weight:400">HH-WH-APP-GGN</span></button>
+        <button class="ftab active" id="xls-tab-WH"  onclick="selectXlsFacility('WH',this)"  style="background:var(--surface2);border-radius:7px;border:1px solid var(--border)">🏭 Gurgaon Warehouse<span style="display:block;font-size:9px;opacity:.55;font-weight:400">HH-WH-APP-GGN</span></button>
         <button class="ftab"        id="xls-tab-DS1" onclick="selectXlsFacility('DS1',this)" style="border-radius:7px;border:1px solid var(--border)">🏪 Gurgaon<span style="display:block;font-size:9px;opacity:.55;font-weight:400">HH-DS-APP-GGN</span></button>
         <button class="ftab"        id="xls-tab-DS2" onclick="selectXlsFacility('DS2',this)" style="border-radius:7px;border:1px solid var(--border)">🏪 Lajpat Nagar<span style="display:block;font-size:9px;opacity:.55;font-weight:400">HH-DS-APP-LJP</span></button>
         <button class="ftab"        id="xls-tab-DS3" onclick="selectXlsFacility('DS3',this)" style="border-radius:7px;border:1px solid var(--border)">🏪 Noida<span style="display:block;font-size:9px;opacity:.55;font-weight:400">HH-DS-APP-NOI</span></button>
@@ -438,7 +456,7 @@ tr:hover td{background:#fafaf8}
       Quick Stock Entry — Select Facility
     </div>
     <div style="display:flex;gap:6px;margin-bottom:1rem;flex-wrap:wrap">
-      <button class="ftab active" id="upd-tab-WH"  onclick="switchUpdateFacility('WH',this)"  style="background:var(--surface2);border-radius:7px;border:1px solid var(--border)">🏭 Warehouse<span style="display:block;font-size:9px;opacity:.55;font-weight:400">HH-WH-APP-GGN</span></button>
+      <button class="ftab active" id="upd-tab-WH"  onclick="switchUpdateFacility('WH',this)"  style="background:var(--surface2);border-radius:7px;border:1px solid var(--border)">🏭 Gurgaon Warehouse<span style="display:block;font-size:9px;opacity:.55;font-weight:400">HH-WH-APP-GGN</span></button>
       <button class="ftab" id="upd-tab-DS1" onclick="switchUpdateFacility('DS1',this)" style="border-radius:7px;border:1px solid var(--border)">🏪 Gurgaon<span style="display:block;font-size:9px;opacity:.55;font-weight:400">HH-DS-APP-GGN</span></button>
       <button class="ftab" id="upd-tab-DS2" onclick="switchUpdateFacility('DS2',this)" style="border-radius:7px;border:1px solid var(--border)">🏪 Lajpat Nagar<span style="display:block;font-size:9px;opacity:.55;font-weight:400">HH-DS-APP-LJP</span></button>
       <button class="ftab" id="upd-tab-DS3" onclick="switchUpdateFacility('DS3',this)" style="border-radius:7px;border:1px solid var(--border)">🏪 Noida<span style="display:block;font-size:9px;opacity:.55;font-weight:400">HH-DS-APP-NOI</span></button>
@@ -470,10 +488,10 @@ tr:hover td{background:#fafaf8}
       <div class="form-group">
         <label>Facility</label>
         <select id="single-facility">
-          <option value="WH">Warehouse</option>
-          <option value="DS1">Dark Store 1</option>
-          <option value="DS2">Dark Store 2</option>
-          <option value="DS3">Dark Store 3</option>
+          <option value="WH">Gurgaon Warehouse</option>
+          <option value="DS1">Gurgaon (DS1)</option>
+          <option value="DS2">Lajpat Nagar (DS2)</option>
+          <option value="DS3">Noida (DS3)</option>
         </select>
       </div>
       <div class="form-group">
@@ -502,11 +520,16 @@ tr:hover td{background:#fafaf8}
 <!-- ── REORDER QUEUE ── -->
 <div class="page" id="page-reorder">
   <div style="display:flex;gap:8px;margin-bottom:1rem;align-items:center">
+    <select id="reo-city" onchange="onReoCityFilter()">
+      <option value="all">All Cities</option>
+      <option value="Gurgaon">Gurgaon</option>
+      <option value="Delhi">Delhi</option>
+    </select>
     <select id="reo-filter" onchange="renderReorder()">
       <option value="all">All Stores</option>
-      <option value="DS1">Gurgaon (GGN)</option>
-      <option value="DS2">Lajpat Nagar (LJP)</option>
-      <option value="DS3">Noida (NOI)</option>
+      <option value="DS1">Gurgaon</option>
+      <option value="DS2">Lajpat Nagar</option>
+      <option value="DS3">Noida</option>
     </select>
     <button class="btn btn-sm" onclick="replenishAllCritical()">⚡ Replenish All Critical</button>
   </div>
@@ -523,7 +546,7 @@ tr:hover td{background:#fafaf8}
       <div class="form-group">
         <label>From Store</label>
         <select id="xfr-from" onchange="refreshTransferPreview()">
-          <option value="WH">🏭 Warehouse (HH-WH-APP-GGN)</option>
+          <option value="WH">🏭 Gurgaon Warehouse</option>
           <option value="DS1">🏪 Gurgaon (HH-DS-APP-GGN)</option>
           <option value="DS2">🏪 Lajpat Nagar (HH-DS-APP-LJP)</option>
           <option value="DS3">🏪 Noida (HH-DS-APP-NOI)</option>
@@ -535,7 +558,7 @@ tr:hover td{background:#fafaf8}
           <option value="DS1">🏪 Gurgaon (HH-DS-APP-GGN)</option>
           <option value="DS2">🏪 Lajpat Nagar (HH-DS-APP-LJP)</option>
           <option value="DS3">🏪 Noida (HH-DS-APP-NOI)</option>
-          <option value="WH">🏭 Warehouse (HH-WH-APP-GGN)</option>
+          <option value="WH">🏭 Gurgaon Warehouse</option>
         </select>
       </div>
       <div class="form-group">
@@ -594,7 +617,7 @@ tr:hover td{background:#fafaf8}
   <div class="cons-table-wrap" id="cons-table-wrap">
     <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:1rem">
       <div>
-        <p style="font-size:13px;color:var(--muted)">📊 View-only · 298 SKUs · DS1 pilot (151 days) · DS2 & DS3 mirror DS1 as baseline</p>
+        <p style="font-size:13px;color:var(--muted)">📊 View-only · 298 SKUs · Rates derived from historical orders data · DS2 & DS3 mirror DS1 baseline</p>
       </div>
       <button class="btn btn-sm" onclick="lockConsumption()">🔒 Lock</button>
     </div>
@@ -640,9 +663,9 @@ tr:hover td{background:#fafaf8}
     <p style="font-size:11px;font-weight:600;color:var(--faint);text-transform:uppercase;letter-spacing:.5px;margin:1rem 0 .5rem">Opening Stock</p>
     <div class="modal-form-grid">
       <div class="form-group"><label>Warehouse</label><input id="m-wh" type="number" value="0" min="0"></div>
-      <div class="form-group"><label>Dark Store 1</label><input id="m-ds1" type="number" value="0" min="0"></div>
-      <div class="form-group"><label>Dark Store 2</label><input id="m-ds2" type="number" value="0" min="0"></div>
-      <div class="form-group"><label>Dark Store 3</label><input id="m-ds3" type="number" value="0" min="0"></div>
+      <div class="form-group"><label>Gurgaon (DS1)</label><input id="m-ds1" type="number" value="0" min="0"></div>
+      <div class="form-group"><label>Lajpat Nagar (DS2)</label><input id="m-ds2" type="number" value="0" min="0"></div>
+      <div class="form-group"><label>Noida (DS3)</label><input id="m-ds3" type="number" value="0" min="0"></div>
     </div>
     <p style="font-size:11px;font-weight:600;color:var(--faint);text-transform:uppercase;letter-spacing:.5px;margin:1rem 0 .5rem">Daily Consumption (DS1 pilot — DS2 & DS3 will mirror)</p>
     <div class="modal-form-grid">
@@ -662,7 +685,10 @@ tr:hover td{background:#fafaf8}
 // DATA
 // ─────────────────────────────────────────────
 const STORES=['DS1','DS2','DS3'],LOCS=['WH','DS1','DS2','DS3'];
-const NAMES={WH:'Central Warehouse',DS1:'Gurgaon',DS2:'Lajpat Nagar',DS3:'Noida'};
+const NAMES={WH:'Gurgaon Warehouse',DS1:'Gurgaon',DS2:'Lajpat Nagar',DS3:'Noida'};
+const CITIES={WH:'Gurgaon',DS1:'Delhi',DS2:'Delhi',DS3:'Delhi'};
+const FACILITY_TYPE={WH:'warehouse',DS1:'dark-store',DS2:'dark-store',DS3:'dark-store'};
+const facilityActive={WH:true,DS1:true,DS2:true,DS3:true};
 const CODES={WH:'HH-WH-APP-GGN',DS1:'HH-DS-APP-GGN',DS2:'HH-DS-APP-LJP',DS3:'HH-DS-APP-NOI'};
 
 // ─── GOOGLE SHEETS SYNC CONFIG ───────────────────────────
@@ -777,7 +803,7 @@ async function loadFromSheet() {
     // Load SKUs from sheet
     skus = d.skus.map(s => ({
       id:        Number(s.id),
-      skuid:     String(s.skuid),
+      skuid:     String(s.code),
       code:      String(s.code),
       name:      String(s.name),
       cat:       String(s.cat),
@@ -1836,6 +1862,8 @@ function getAlerts(){
   let a=[];
   skus.forEach(s=>{
     STORES.forEach(st=>{
+      // Skip inactive facilities
+      if(typeof facilityActive !== 'undefined' && facilityActive[st] === false) return;
       const d=doi(s.id,st),status=doiStatus(d,s.threshold);
       if(status==='crit'||status==='warn')
         a.push({sku:s,store:st,doi:d,status,stock:inventory[s.id][st],cons:consumption[s.id][st]});
@@ -1903,7 +1931,7 @@ function renderFacilityHealth(){
     if(loc==='WH'){
       const t=skus.reduce((s,sk)=>s+(inventory[sk.id].WH||0),0);
       return`<div class="health-item"><div class="health-dot" style="background:var(--bmid)"></div>
-        <div class="health-info"><div class="health-name">Central Warehouse<span style="font-size:10px;color:var(--faint);font-weight:400;margin-left:6px">HH-WH-APP-GGN</span></div><div class="health-sub">${t.toLocaleString()} total units</div></div>
+        <div class="health-info"><div class="health-name">Gurgaon Warehouse<span style="font-size:10px;color:var(--faint);font-weight:400;margin-left:6px">HH-WH-APP-GGN</span></div><div class="health-sub">${t.toLocaleString()} total units</div></div>
         <span class="badge badge-info">Buffer</span></div>`;
     }
     const sa=getAlerts().filter(a=>a.store===loc);
@@ -1981,7 +2009,7 @@ function renderFacilityTable(){
   document.getElementById('facility-table').innerHTML=`
     <table>
       <thead><tr>
-        <th>SKU ID</th><th>SKU Name</th><th>Category</th>
+        <th>SKU Code</th><th>SKU Name</th><th>Category</th>
         <th class="num">Stock (units)</th>
         ${isStore?`<th class="num">Rate (u/day)</th>`:'<th class="num">Covers DS1 (days)</th>'}
         ${doiCol}
@@ -1994,7 +2022,7 @@ function renderFacilityTable(){
           const rate=isStore?(consumption[s.id][loc]||0):null;
           const coversDays=!isStore&&rate?Math.round(stock/(consumption[s.id]['DS1']||1)*10)/10:'—';
           return`<tr>
-            <td class="mono">${s.skuid}</td>
+            <td class="mono">${s.code}</td>
             <td style="font-weight:500;max-width:280px">${s.name.split(',').slice(-1)[0].trim()}</td>
             <td><span class="badge badge-info" style="font-size:10px">${s.cat.replace('Washing Machine','WM')}</span></td>
             <td class="num" style="font-weight:600">${stock.toLocaleString()}</td>
@@ -2013,11 +2041,13 @@ function renderFacilityTable(){
 // INVENTORY TABLE
 // ─────────────────────────────────────────────
 function renderInventory(){
-  const storeF=document.getElementById('inv-store').value;
+  const cityF=document.getElementById('inv-city')?document.getElementById('inv-city').value:'all';
+  let storeF=document.getElementById('inv-store').value;
   const statusF=document.getElementById('inv-status').value;
   const catF=document.getElementById('inv-cat').value;
   const search=(document.getElementById('inv-search').value||'').toLowerCase();
-  const visStores=storeF==='all'?STORES:[storeF];
+  const visStores = (storeF==='all' ? STORES : [storeF])
+    .filter(st => facilityActive[st]);
 
   let rows=skus.filter(s=>{
     if(!s.name.toLowerCase().includes(search)&&!s.code.toLowerCase().includes(search))return false;
@@ -2133,8 +2163,8 @@ function saveStockUpdate(id){
   const val=parseInt(document.getElementById(`upd-inp-${id}`).value)||0;
   inventory[id][loc]=val;
   const s=skus.find(sk=>sk.id===id);
-  const _logE1={facility:loc,skusChanged:1,method:'manual',summary:(s?s.skuid:'SKU')+' → '+val+' units'};
-  logStockUpdate(loc,1,'manual',`${s?s.skuid:'SKU'} → ${val} units`);
+  const _logE1={facility:loc,skusChanged:1,method:'manual',summary:(s?s.code:'SKU')+' → '+val+' units'};
+  logStockUpdate(loc,1,'manual',`${s?s.code:'SKU'} → ${val} units`);
   queueSync(id,loc,val,_logE1);
   // Update displayed current stock
   const curEl=document.getElementById(`upd-cur-${id}`);
@@ -2183,8 +2213,8 @@ function applySingleUpdate(){
   if(!skuId){toast('Select a SKU');return;}
   const s=skus.find(sk=>sk.id===skuId);
   inventory[skuId][loc]=qty;
-  logStockUpdate(loc,1,'single',`${s?s.skuid+' · ':''} ${qty} units · ${reason}`);
-  queueSync(skuId,loc,qty,{facility:loc,skusChanged:1,method:'single',summary:(s?s.skuid+' · ':'')+qty+' units · '+reason});
+  logStockUpdate(loc,1,'single',`${s?s.code+' · ':''} ${qty} units · ${reason}`);
+  queueSync(skuId,loc,qty,{facility:loc,skusChanged:1,method:'single',summary:(s?s.code+' · ':'')+qty+' units · '+reason});
   renderAll();
   toast(`Updated: ${NAMES[loc]} · ${qty} units · ${reason}`);
   document.getElementById('single-qty').value='';
@@ -2192,7 +2222,7 @@ function applySingleUpdate(){
 
 function populateSingleSkuSelect(){
   const sel=document.getElementById('single-sku');
-  sel.innerHTML=skus.map(s=>`<option value="${s.id}">${s.skuid} — ${s.name.split(',').slice(-1)[0].trim().substring(0,35)}</option>`).join('');
+  sel.innerHTML=skus.map(s=>`<option value="${s.id}">${s.code} · ${s.name.split(',').slice(-1)[0].trim().substring(0,32)}</option>`).join('');
 }
 
 // ─────────────────────────────────────────────
@@ -2200,7 +2230,8 @@ function populateSingleSkuSelect(){
 // ─────────────────────────────────────────────
 function renderReorder(){
   const storeF=document.getElementById('reo-filter').value;
-  const visStores=storeF==='all'?STORES:[storeF];
+  const visStores = (storeF==='all' ? STORES : [storeF])
+    .filter(st => facilityActive[st]);
   const alerts=getAlerts().filter(a=>visStores.includes(a.store));
   if(!alerts.length){
     document.getElementById('reorder-content').innerHTML='<div class="card"><div class="empty">✅ No reorders needed</div></div>';return;
@@ -2219,7 +2250,7 @@ function renderReorder(){
               <span class="badge badge-${a.status}">${a.status==='crit'?'Critical':'Warning'}</span>
               <span class="badge badge-info">${NAMES[a.store]}</span>
             </div>
-            <div class="reo-desc" style="font-family:'DM Mono',monospace;font-size:11px;color:var(--faint);margin-bottom:2px">${a.sku.skuid} · ${a.sku.code}</div>
+            <div class="reo-desc" style="font-family:'DM Mono',monospace;font-size:11px;color:var(--faint);margin-bottom:2px">${a.sku.code} · ${a.sku.code}</div>
             <div class="reo-desc">Stock: ${a.stock} · DOI: ${doiLabel(a.doi)} · Rate: ${a.cons}/day · WH: ${inventory[a.sku.id].WH} units</div>
           </div>
           <div class="reo-right">
@@ -2245,8 +2276,8 @@ function replenish(id,store,qty){
   if(inventory[id].WH<qty){toast('Insufficient warehouse stock');return;}
   inventory[id].WH-=qty;inventory[id][store]+=qty;
   const s=skus.find(sk=>sk.id===id);
-  logStockUpdate('WH',1,'replenish',`Sent ${qty} units of ${s?s.skuid:'SKU'} → ${NAMES[store]}`);
-  logStockUpdate(store,1,'replenish',`Received ${qty} units of ${s?s.skuid:'SKU'} from Warehouse`);
+  logStockUpdate('WH',1,'replenish',`Sent ${qty} units of ${s?s.code:'SKU'} → ${NAMES[store]}`);
+  logStockUpdate(store,1,'replenish',`Received ${qty} units of ${s?s.code:'SKU'} from Warehouse`);
   renderAll();toast(`Moved ${qty} units to ${NAMES[store]}`);
 }
 
@@ -2310,8 +2341,8 @@ function renderConsumptionTable(){
   document.getElementById('cons-table').innerHTML=`
     <table>
       <thead><tr>
-        <th>SKU ID</th><th>SKU Name</th><th>Category</th>
-        <th class="num">DS1 Rate<br><span style="font-weight:400;text-transform:none">(pilot 151d)</span></th>
+        <th>SKU Code</th><th>SKU Name</th><th>Category</th>
+        <th class="num">DS1 Rate<br><span style="font-weight:400;text-transform:none">(Historical data)</span></th>
         <th class="num">DS2 Rate<br><span style="font-weight:400;text-transform:none">(mirrors DS1)</span></th>
         <th class="num">DS3 Rate<br><span style="font-weight:400;text-transform:none">(mirrors DS1)</span></th>
         <th class="num">Avg/day</th>
@@ -2322,12 +2353,12 @@ function renderConsumptionTable(){
           const r=consumption[s.id];
           const avg=Math.round((r.DS1+r.DS2+r.DS3)/3*1000)/1000;
           return`<tr>
-            <td class="mono">${s.skuid}</td>
+            <td class="mono">${s.code}</td>
             <td style="font-size:12px;font-weight:500">${s.name.split(',').slice(-1)[0].trim()}</td>
             <td><span class="badge badge-info" style="font-size:10px">${s.cat.replace('Washing Machine','WM')}</span></td>
             <td class="cons-cell">${r.DS1}</td>
-            <td class="cons-cell" style="color:var(--gmid)">${r.DS2} <span style="font-size:9px;color:var(--faint)">↗DS1</span></td>
-            <td class="cons-cell" style="color:var(--gmid)">${r.DS3} <span style="font-size:9px;color:var(--faint)">↗DS1</span></td>
+            <td class="cons-cell" style="color:var(--gmid)">${r.DS2} </td>
+            <td class="cons-cell" style="color:var(--gmid)">${r.DS3} </td>
             <td class="cons-cell" style="color:var(--muted)">${avg}</td>
             <td><span class="badge badge-warn">&lt; ${s.threshold}d</span></td>
           </tr>`;
@@ -2343,12 +2374,12 @@ function renderConsumptionTable(){
 function renderSkuManage(){
   document.getElementById('sku-manage-table').innerHTML=`
     <table>
-      <thead><tr><th>SKU ID</th><th>SKU Name</th><th>Category</th><th class="num">Threshold</th><th class="num">Total Stock</th><th>Actions</th></tr></thead>
+      <thead><tr><th>SKU Code</th><th>SKU Name</th><th>Category</th><th class="num">Threshold</th><th class="num">Total Stock</th><th>Actions</th></tr></thead>
       <tbody>
         ${skus.map(s=>{
           const total=LOCS.reduce((a,l)=>a+(inventory[s.id][l]||0),0);
           return`<tr>
-            <td class="mono">${s.skuid}</td>
+            <td class="mono">${s.code}</td>
             <td style="font-weight:500;font-size:12px">${s.name.split(',').slice(-1)[0].trim()}</td>
             <td><span class="badge badge-info" style="font-size:10px">${s.cat.replace('Washing Machine','WM')}</span></td>
             <td class="num">${s.threshold}d</td>
@@ -2442,6 +2473,7 @@ function updateNavBadges(){
 }
 
 function renderAll(){
+  renderFacilityStatusBar();
   populateTransferSkuSelect();
   renderMetrics();renderAlerts();renderFacilityHealth();
   renderFacilityStats();renderFacilityTable();renderFacilityUpdateLog();
@@ -2550,7 +2582,7 @@ function runImportPreview() {
   const codeMap = {};
   skus.forEach(s => {
     codeMap[s.code.toLowerCase().trim()] = s;
-    codeMap[s.skuid.toLowerCase().trim()] = s;
+    codeMap[s.code.toLowerCase().trim()] = s;
   });
 
   const matched = [], unmatched = [], skipped = [];
@@ -2585,7 +2617,7 @@ function runImportPreview() {
     const sign  = delta >= 0 ? '+' : '';
     const dcolor = delta > 0 ? 'var(--gmid)' : delta < 0 ? 'var(--rmid)' : 'var(--muted)';
     return `<tr>
-      <td class="mono" style="font-size:11px">${m.sku.skuid}</td>
+      <td class="mono" style="font-size:11px">${m.sku.code}</td>
       <td class="mono" style="font-size:11px;color:var(--faint)">${m.rawCode}</td>
       <td style="font-size:12px;font-weight:500">${m.sku.name.split(',').slice(-1)[0].trim()}</td>
       <td class="num">
@@ -2615,7 +2647,7 @@ function runImportPreview() {
   document.getElementById('xls-preview-table').innerHTML = `
     <table>
       <thead><tr>
-        <th>SKU ID</th><th>SKU Code</th><th>SKU Name</th>
+        <th>SKU Code</th><th>SKU Code</th><th>SKU Name</th>
         <th class="num">Stock at ${NAMES[loc]}</th>
       </tr></thead>
       <tbody>${rows_html}</tbody>
@@ -2657,7 +2689,7 @@ function resetXlsImport() {
 function populateTransferSkuSelect(){
   const sel=document.getElementById('xfr-sku');
   if(!sel)return;
-  sel.innerHTML=skus.map(s=>`<option value="${s.id}">${s.skuid} — ${s.name.split(',').slice(-1)[0].trim().substring(0,40)}</option>`).join('');
+  sel.innerHTML=skus.map(s=>`<option value="${s.id}">${s.code} — ${s.name.split(',').slice(-1)[0].trim().substring(0,40)}</option>`).join('');
 }
 
 function refreshTransferPreview(){
@@ -2722,20 +2754,20 @@ function applyTransfer(){
   inventory[skuId][from]-=qty;
   inventory[skuId][to]+=qty;
 
-  logStockUpdate(from,1,'replenish',`Transferred ${qty}u of ${s?s.skuid:'SKU'} → ${NAMES[to]} (${CODES[to]})`);
-  logStockUpdate(to,1,'replenish',`Received ${qty}u of ${s?s.skuid:'SKU'} from ${NAMES[from]} (${CODES[from]})`);
-  queueSync(skuId,from,inventory[skuId][from],{facility:from,skusChanged:1,method:'replenish',summary:'Transferred '+qty+'u of '+(s?s.skuid:'SKU')+' → '+NAMES[to]});
-  queueSync(skuId,to,inventory[skuId][to],{facility:to,skusChanged:1,method:'replenish',summary:'Received '+qty+'u of '+(s?s.skuid:'SKU')+' from '+NAMES[from]});
+  logStockUpdate(from,1,'replenish',`Transferred ${qty}u of ${s?s.code:'SKU'} → ${NAMES[to]} (${CODES[to]})`);
+  logStockUpdate(to,1,'replenish',`Received ${qty}u of ${s?s.code:'SKU'} from ${NAMES[from]} (${CODES[from]})`);
+  queueSync(skuId,from,inventory[skuId][from],{facility:from,skusChanged:1,method:'replenish',summary:'Transferred '+qty+'u of '+(s?s.code:'SKU')+' → '+NAMES[to]});
+  queueSync(skuId,to,inventory[skuId][to],{facility:to,skusChanged:1,method:'replenish',summary:'Received '+qty+'u of '+(s?s.code:'SKU')+' from '+NAMES[from]});
 
   renderAll();
   populateTransferSkuSelect();
   refreshTransferPreview();
 
   const succ=document.getElementById('xfr-success');
-  succ.textContent=`✓ Transferred ${qty} units of ${s?s.skuid:'SKU'} from ${NAMES[from]} to ${NAMES[to]}`;
+  succ.textContent=`✓ Transferred ${qty} units of ${s?s.code:'SKU'} from ${NAMES[from]} to ${NAMES[to]}`;
   succ.style.opacity=1;
   setTimeout(()=>succ.style.opacity=0,3000);
-  toast(`Transferred ${qty}u of ${s?s.skuid:'SKU'} → ${NAMES[to]}`);
+  toast(`Transferred ${qty}u of ${s?s.code:'SKU'} → ${NAMES[to]}`);
 }
 
 populateTransferSkuSelect();
@@ -2811,6 +2843,48 @@ async function testConnection() {
   } else {
     alert('✅  Everything working!\n\nSKUs in sheet: ' + d.skuCount + '\nStock rows: ' + d.stkCount + (d.lastWrite ? '\nLast write: ' + d.lastWrite : '') + '\n\nReads and writes are confirmed.');
   }
+}
+
+// ─────────────────────────────────────────────
+// FACILITY ACTIVE / INACTIVE
+// ─────────────────────────────────────────────
+
+function toggleFacility(loc) {
+  facilityActive[loc] = !facilityActive[loc];
+  logStockUpdate(loc, 0, 'system', NAMES[loc] + ' marked ' + (facilityActive[loc] ? 'ACTIVE' : 'INACTIVE'));
+  renderFacilityStatusBar();
+  renderAll();
+  toast(NAMES[loc] + ' marked ' + (facilityActive[loc] ? 'Active ✓' : 'Inactive ✗'));
+}
+
+function renderFacilityStatusBar() {
+  const el = document.getElementById('fac-status-bar');
+  if (!el) return;
+  el.innerHTML = '<span style="font-size:11px;font-weight:600;color:var(--muted);text-transform:uppercase;letter-spacing:.5px;margin-right:6px">Facilities</span>' +
+    LOCS.map(loc => {
+      const active = facilityActive[loc];
+      return `<button class="fac-toggle ${active ? 'active-fac' : 'inactive-fac'}"
+        onclick="toggleFacility('${loc}')"
+        title="${active ? 'Mark inactive' : 'Mark active'}">
+        <span class="fac-dot"></span>
+        ${NAMES[loc]}
+        <span style="font-size:10px;opacity:.65;margin-left:2px">${active ? 'Active' : 'Inactive'}</span>
+      </button>`;
+    }).join('');
+}
+
+function onCityFilter() {
+  const city = document.getElementById('inv-city').value;
+  const storeEl = document.getElementById('inv-store');
+  if (city === 'Gurgaon') storeEl.value = 'WH';
+  else storeEl.value = 'all';
+  renderInventory();
+}
+
+function onReoCityFilter() {
+  const city = document.getElementById('reo-city').value;
+  document.getElementById('reo-filter').value = 'all';
+  renderReorder();
 }
 
 renderAll();
