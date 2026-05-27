@@ -1,0 +1,2820 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Inventory Command Center</title>
+<link href="https://fonts.googleapis.com/css2?family=DM+Sans:wght@400;500;600&family=DM+Mono:wght@400;500&display=swap" rel="stylesheet">
+<style>
+:root{
+  --bg:#f5f4f1;--surface:#fff;--surface2:#eeecea;--border:rgba(0,0,0,.09);
+  --border-s:rgba(0,0,0,.16);--text:#181816;--muted:#686864;--faint:#9e9e99;
+  --green:#3B6D11;--gbg:#EAF3DE;--gmid:#639922;
+  --amber:#854F0B;--abg:#FAEEDA;--amid:#EF9F27;
+  --red:#A32D2D;--rbg:#FCEBEB;--rmid:#E24B4A;
+  --blue:#185FA5;--bbg:#E6F1FB;--bmid:#378ADD;
+  --rad:8px;--rad-lg:12px;
+}
+*,*::before,*::after{box-sizing:border-box;margin:0;padding:0}
+body{font-family:'DM Sans',sans-serif;background:var(--bg);color:var(--text);font-size:14px;line-height:1.5;height:100vh;overflow:hidden}
+.shell{display:flex;height:100vh}
+
+/* SIDEBAR */
+.sidebar{width:216px;background:#18181e;display:flex;flex-direction:column;flex-shrink:0;overflow-y:auto}
+.logo-wrap{padding:20px 16px 14px;border-bottom:1px solid rgba(255,255,255,.08)}
+.logo-icon{width:34px;height:34px;background:#fff;border-radius:8px;display:flex;align-items:center;justify-content:center;margin-bottom:10px}
+.logo-title{font-size:14px;font-weight:600;color:#f0efe8}
+.logo-sub{font-size:11px;color:#6b6b77;margin-top:2px}
+.nav-section{padding:16px 10px 4px;font-size:10px;font-weight:600;color:#4a4a58;letter-spacing:.8px;text-transform:uppercase}
+.nav-btn{display:flex;align-items:center;gap:9px;width:100%;padding:8px 12px;border:none;background:none;color:#9e9ea8;font-family:inherit;font-size:13px;cursor:pointer;border-radius:7px;margin-bottom:2px;text-align:left;transition:all .12s;position:relative}
+.nav-btn:hover{background:rgba(255,255,255,.07);color:#d3d1c7}
+.nav-btn.active{background:rgba(255,255,255,.12);color:#f0efe8;font-weight:500}
+.nav-btn svg{width:15px;height:15px;flex-shrink:0;opacity:.7}
+.nav-btn.active svg{opacity:1}
+.nav-badge{margin-left:auto;font-size:10px;font-weight:700;padding:1px 6px;border-radius:10px}
+.nbadge-red{background:rgba(226,75,74,.25);color:#F09595}
+.nbadge-amber{background:rgba(239,159,39,.2);color:#FAC775}
+
+/* MAIN */
+.main{flex:1;overflow:hidden;display:flex;flex-direction:column}
+.topbar{height:52px;background:var(--surface);border-bottom:1px solid var(--border);display:flex;align-items:center;padding:0 1.5rem;gap:12px;flex-shrink:0}
+.topbar-title{font-size:16px;font-weight:600;flex:1}
+.topbar-sub{font-size:12px;color:var(--faint)}
+.content{flex:1;overflow-y:auto;padding:1.5rem}
+
+/* PAGE */
+.page{display:none}.page.active{display:block}
+
+/* BUTTONS */
+.btn{display:inline-flex;align-items:center;gap:6px;padding:7px 14px;border-radius:var(--rad);font-size:13px;font-family:inherit;font-weight:500;cursor:pointer;border:1px solid var(--border-s);background:var(--surface);color:var(--text);transition:all .12s}
+.btn:hover{background:var(--surface2)}
+.btn-primary{background:var(--text);color:var(--surface);border-color:var(--text)}.btn-primary:hover{opacity:.85}
+.btn-sm{padding:5px 10px;font-size:12px}
+.btn-green{background:var(--gbg);color:var(--green);border-color:var(--gmid)}.btn-green:hover{background:#d4ebbc}
+
+/* CARDS */
+.card{background:var(--surface);border:1px solid var(--border);border-radius:var(--rad-lg);padding:1.25rem;margin-bottom:1rem}
+.card-title{font-size:14px;font-weight:500;margin-bottom:1rem;display:flex;align-items:center;gap:8px}
+
+/* METRICS */
+.metric-grid{display:grid;grid-template-columns:repeat(4,1fr);gap:12px;margin-bottom:1.25rem}
+.metric-card{background:var(--surface);border:1px solid var(--border);border-radius:var(--rad-lg);padding:1rem 1.25rem}
+.metric-label{font-size:11px;color:var(--muted);margin-bottom:5px}
+.metric-value{font-size:26px;font-weight:600;line-height:1}
+.metric-sub{font-size:11px;color:var(--faint);margin-top:3px}
+.mv-red .metric-value{color:var(--rmid)}
+.mv-amber .metric-value{color:var(--amid)}
+.mv-blue .metric-value{color:var(--bmid)}
+.mv-green .metric-value{color:var(--gmid)}
+
+/* TABLES */
+.tbl-wrap{border:1px solid var(--border);border-radius:var(--rad-lg);overflow:hidden;background:var(--surface)}
+table{width:100%;border-collapse:collapse;font-size:13px}
+thead th{background:var(--surface2);font-size:11px;font-weight:600;color:var(--muted);text-transform:uppercase;letter-spacing:.4px;padding:9px 12px;text-align:left;border-bottom:1px solid var(--border);position:sticky;top:0;z-index:2}
+td{padding:9px 12px;border-bottom:1px solid var(--border);vertical-align:middle;color:var(--text)}
+tr:last-child td{border-bottom:none}
+tr:hover td{background:#fafaf8}
+.num{text-align:right;font-family:'DM Mono',monospace;font-size:12px}
+.mono{font-family:'DM Mono',monospace;font-size:12px}
+
+/* BADGES */
+.badge{display:inline-flex;align-items:center;padding:2px 8px;border-radius:20px;font-size:11px;font-weight:600}
+.badge-ok{background:var(--gbg);color:var(--green)}
+.badge-warn{background:var(--abg);color:var(--amber)}
+.badge-crit{background:var(--rbg);color:var(--red)}
+.badge-info{background:var(--bbg);color:var(--blue)}
+.badge-na{background:var(--surface2);color:var(--faint);border:1px solid var(--border)}
+
+/* DOI CELLS */
+.doi-ok{color:var(--green);font-weight:600;font-family:'DM Mono',monospace;font-size:12px}
+.doi-warn{color:var(--amid);font-weight:600;font-family:'DM Mono',monospace;font-size:12px}
+.doi-crit{color:var(--rmid);font-weight:600;font-family:'DM Mono',monospace;font-size:12px}
+.doi-na{color:var(--faint);font-family:'DM Mono',monospace;font-size:12px}
+
+/* FILTERS */
+.filter-row{display:flex;gap:8px;margin-bottom:1rem;align-items:center;flex-wrap:wrap}
+.filter-row select,.filter-row input{font-family:inherit;font-size:13px;padding:7px 10px;border-radius:var(--rad);border:1px solid var(--border);background:var(--surface);color:var(--text)}
+.filter-row input{min-width:180px}
+.result-count{font-size:12px;color:var(--faint);margin-left:auto}
+
+/* ALERTS */
+.alert-item{display:flex;align-items:flex-start;gap:10px;padding:10px 0;border-bottom:1px solid var(--border)}
+.alert-item:last-child{border-bottom:none;padding-bottom:0}
+.alert-icon{width:32px;height:32px;border-radius:var(--rad);display:flex;align-items:center;justify-content:center;flex-shrink:0}
+.ai-red{background:var(--rbg)}.ai-amber{background:var(--abg)}
+.alert-body{flex:1}
+.alert-title{font-size:13px;font-weight:500}
+.alert-desc{font-size:12px;color:var(--muted);margin-top:2px}
+
+/* STORE HEALTH */
+.health-item{display:flex;align-items:center;gap:10px;padding:9px 0;border-bottom:1px solid var(--border)}
+.health-item:last-child{border-bottom:none}
+.health-dot{width:8px;height:8px;border-radius:50%;flex-shrink:0}
+.health-info{flex:1}
+.health-name{font-size:13px;font-weight:500}
+.health-sub{font-size:12px;color:var(--muted);margin-top:1px}
+.progress-track{height:4px;background:var(--surface2);border-radius:2px;margin-top:5px;width:90px;overflow:hidden}
+.progress-fill{height:100%;border-radius:2px}
+
+/* FACILITY PAGE */
+.facility-tabs{display:flex;gap:4px;margin-bottom:1rem;background:var(--surface2);border-radius:var(--rad);padding:4px;width:fit-content}
+.ftab{padding:6px 18px;border-radius:6px;border:none;background:transparent;font-family:inherit;font-size:13px;font-weight:500;cursor:pointer;color:var(--muted);transition:all .12s}
+.ftab.active{background:var(--surface);color:var(--text);box-shadow:0 1px 3px rgba(0,0,0,.08)}
+.facility-stat-grid{display:grid;grid-template-columns:repeat(3,1fr);gap:10px;margin-bottom:1rem}
+.fstat{background:var(--surface);border:1px solid var(--border);border-radius:var(--rad-lg);padding:.9rem 1rem;text-align:center}
+.fstat-val{font-size:22px;font-weight:600;font-family:'DM Mono',monospace}
+.fstat-label{font-size:11px;color:var(--muted);margin-top:3px}
+
+/* STOCK UPDATE */
+.update-panel{background:var(--surface);border:1px solid var(--border);border-radius:var(--rad-lg);padding:1.25rem;margin-bottom:1rem}
+.update-grid{display:grid;grid-template-columns:1fr 1fr;gap:1rem}
+.form-group{display:flex;flex-direction:column;gap:5px}
+.form-group label{font-size:12px;font-weight:500;color:var(--muted)}
+.form-group select,.form-group input{font-family:inherit;font-size:13px;padding:8px 10px;border-radius:var(--rad);border:1px solid var(--border);background:var(--surface2);color:var(--text)}
+.form-group select:focus,.form-group input:focus{outline:none;border-color:var(--bmid);background:var(--surface)}
+.inline-edit{width:72px;text-align:right;font-family:'DM Mono',monospace;font-size:12px;padding:3px 6px;border:1px solid var(--border);border-radius:5px;background:var(--surface2);color:var(--text)}
+.inline-edit:focus{outline:none;border-color:var(--bmid);background:var(--surface)}
+.save-indicator{font-size:11px;color:var(--gmid);opacity:0;transition:opacity .3s;margin-left:6px}
+.save-indicator.show{opacity:1}
+
+/* PASSWORD GATE */
+.pw-gate{display:flex;flex-direction:column;align-items:center;justify-content:center;min-height:60vh;gap:16px}
+.pw-box{background:var(--surface);border:1px solid var(--border);border-radius:var(--rad-lg);padding:2rem;width:360px;text-align:center}
+.pw-box h3{font-size:16px;font-weight:600;margin-bottom:6px}
+.pw-box p{font-size:13px;color:var(--muted);margin-bottom:1.25rem}
+.pw-input{width:100%;padding:9px 12px;border-radius:var(--rad);border:1px solid var(--border);background:var(--surface2);font-family:inherit;font-size:14px;text-align:center;letter-spacing:4px;margin-bottom:12px}
+.pw-input:focus{outline:none;border-color:var(--bmid)}
+.pw-error{color:var(--red);font-size:12px;margin-top:4px;min-height:18px}
+.cons-table-wrap{display:none}
+.cons-cell{font-family:'DM Mono',monospace;font-size:12px;text-align:right;color:var(--blue);font-weight:600}
+
+/* MODAL */
+.modal-overlay{display:none;position:fixed;inset:0;background:rgba(0,0,0,.45);z-index:200;align-items:center;justify-content:center}
+.modal-overlay.open{display:flex}
+.modal{background:var(--surface);border-radius:var(--rad-lg);border:1px solid var(--border);padding:1.5rem;width:460px;max-width:95vw;max-height:90vh;overflow-y:auto;box-shadow:0 20px 60px rgba(0,0,0,.15)}
+.modal-header{display:flex;align-items:center;justify-content:space-between;margin-bottom:1.25rem}
+.modal-title{font-size:15px;font-weight:600}
+.modal-close{background:none;border:none;font-size:20px;cursor:pointer;color:var(--muted);line-height:1}
+.modal-footer{display:flex;justify-content:flex-end;gap:8px;margin-top:1.25rem;padding-top:1rem;border-top:1px solid var(--border)}
+.modal-form-grid{display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-bottom:1rem}
+.mfg-full{grid-column:1/-1}
+
+/* TOAST */
+.toast-wrap{position:fixed;bottom:1.25rem;right:1.25rem;display:flex;flex-direction:column;gap:6px;z-index:300}
+.toast{background:var(--text);color:var(--surface);padding:9px 16px;border-radius:var(--rad);font-size:13px;opacity:0;transform:translateY(8px);transition:all .2s;pointer-events:none;max-width:260px}
+.toast.show{opacity:1;transform:translateY(0)}
+
+/* REORDER */
+.reo-item{display:flex;align-items:flex-start;gap:12px;padding:12px 0;border-bottom:1px solid var(--border)}
+.reo-item:last-child{border-bottom:none}
+.reo-body{flex:1}
+.reo-title{font-size:13px;font-weight:500;display:flex;align-items:center;gap:8px;flex-wrap:wrap}
+.reo-desc{font-size:12px;color:var(--muted);margin-top:3px}
+.reo-right{text-align:right;flex-shrink:0}
+.reo-qty{font-size:18px;font-weight:600;font-family:'DM Mono',monospace}
+.reo-qty-label{font-size:11px;color:var(--faint)}
+
+/* EMPTY */
+.empty{text-align:center;padding:2.5rem;color:var(--muted);font-size:13px}
+
+/* Grid 2 col */
+.grid2{display:grid;grid-template-columns:1fr 1fr;gap:1rem}
+
+/* EXCEL IMPORT */
+.drop-zone{border:2px dashed var(--border-s);border-radius:var(--rad-lg);padding:2rem;text-align:center;cursor:pointer;transition:all .15s;background:var(--surface2)}
+.drop-zone:hover,.drop-zone.dragover{border-color:var(--bmid);background:var(--bbg)}
+.drop-zone svg{opacity:.4;margin-bottom:.5rem}
+.drop-zone p{font-size:13px;color:var(--muted)}
+.drop-zone small{font-size:11px;color:var(--faint)}
+.import-preview{display:none}
+.import-stats{display:flex;gap:10px;margin-bottom:1rem;flex-wrap:wrap}
+.istat{padding:8px 14px;border-radius:var(--rad);font-size:12px;font-weight:600}
+.istat-green{background:var(--gbg);color:var(--green)}
+.istat-amber{background:var(--abg);color:var(--amber)}
+.istat-red{background:var(--rbg);color:var(--red)}
+.istat-gray{background:var(--surface2);color:var(--muted);border:1px solid var(--border)}
+.col-map{display:flex;gap:8px;flex-wrap:wrap;margin-bottom:1rem;align-items:center;font-size:12px;color:var(--muted)}
+.col-map select{font-family:inherit;font-size:12px;padding:5px 8px;border-radius:var(--rad);border:1px solid var(--border);background:var(--surface);color:var(--text)}
+.col-tag{background:var(--surface2);border:1px solid var(--border);border-radius:4px;padding:2px 8px;font-size:11px;font-weight:600;color:var(--text)}
+
+
+/* UPDATE LOG */
+.upd-log{margin-top:1rem;border-top:1px solid var(--border);padding-top:.75rem}
+.upd-log-title{font-size:11px;font-weight:600;color:var(--muted);text-transform:uppercase;letter-spacing:.5px;margin-bottom:.5rem;display:flex;align-items:center;justify-content:space-between}
+.upd-log-entry{display:flex;align-items:flex-start;gap:10px;padding:7px 0;border-bottom:1px solid var(--border);font-size:12px}
+.upd-log-entry:last-child{border-bottom:none}
+.upd-log-time{font-family:'DM Mono',monospace;font-size:11px;color:var(--faint);flex-shrink:0;min-width:130px}
+.upd-log-badge{font-size:10px;font-weight:600;padding:1px 7px;border-radius:10px;flex-shrink:0}
+.upd-log-detail{color:var(--muted);flex:1}
+.upd-log-empty{font-size:12px;color:var(--faint);padding:.5rem 0;font-style:italic}
+
+
+/* TRANSFER */
+.transfer-form{display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-bottom:1rem}
+.transfer-arrow{display:flex;align-items:center;justify-content:center;color:var(--bmid);font-size:18px;grid-column:1/-1}
+.store-stock-badge{display:inline-flex;align-items:center;gap:4px;font-size:11px;font-family:'DM Mono',monospace;font-weight:600;padding:2px 8px;border-radius:4px;background:var(--bbg);color:var(--blue);margin-top:4px}
+
+::-webkit-scrollbar{width:5px;height:5px}
+::-webkit-scrollbar-track{background:transparent}
+::-webkit-scrollbar-thumb{background:rgba(0,0,0,.15);border-radius:3px}
+</style>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
+</head>
+<body>
+
+<div class="shell">
+<!-- ===== SIDEBAR ===== -->
+<nav class="sidebar">
+  <div class="logo-wrap">
+    <div class="logo-icon">
+      <svg width="20" height="20" fill="none" stroke="#18181e" stroke-width="2" viewBox="0 0 24 24"><path d="M3 9l9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"/><polyline points="9 22 9 12 15 12 15 22"/></svg>
+    </div>
+    <div class="logo-title">Inventory HQ</div>
+    <div class="logo-sub">HH-WH-APP-GGN · GGN · LJP · NOI</div>
+  </div>
+
+  <div class="nav-section">Overview</div>
+  <button class="nav-btn active" onclick="switchPage('dashboard',this)" title="Dashboard">
+    <svg fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><rect x="3" y="3" width="7" height="7" rx="1"/><rect x="14" y="3" width="7" height="7" rx="1"/><rect x="3" y="14" width="7" height="7" rx="1"/><rect x="14" y="14" width="7" height="7" rx="1"/></svg>
+    Dashboard
+    <span class="nav-badge nbadge-red" id="nb-crit" style="display:none"></span>
+  </button>
+  <button class="nav-btn" onclick="switchPage('reorder',this)" title="Reorder Queue">
+    <svg fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><polyline points="23 4 23 10 17 10"/><path d="M20.49 15a9 9 0 1 1-2.12-9.36L23 10"/></svg>
+    Reorder Queue
+    <span class="nav-badge nbadge-amber" id="nb-warn" style="display:none"></span>
+  </button>
+
+  <div class="nav-section">Stock</div>
+  <button class="nav-btn" onclick="switchPage('facility',this)" title="Facility Inventory">
+    <svg fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><rect x="1" y="3" width="15" height="13" rx="1"/><polygon points="16 8 20 8 23 11 23 16 16 16 16 8"/><circle cx="5.5" cy="18.5" r="2.5"/><circle cx="18.5" cy="18.5" r="2.5"/></svg>
+    Facility View
+  </button>
+  <button class="nav-btn" onclick="switchPage('inventory',this)" title="Inventory Table">
+    <svg fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path d="M9 5H7a2 2 0 0 0-2 2v12a2 2 0 0 0 2 2h10a2 2 0 0 0 2-2V7a2 2 0 0 0-2-2h-2"/><rect x="9" y="3" width="6" height="4" rx="1"/></svg>
+    Inventory Table
+  </button>
+  <button class="nav-btn" onclick="switchPage('update',this)" title="Update Stock">
+    <svg fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"/><path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"/></svg>
+    Update Stock
+  </button>
+
+  <div class="nav-section">Settings</div>
+  <button class="nav-btn" onclick="switchPage('consumption',this)" title="Consumption Rates">
+    <svg fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><rect x="3" y="11" width="18" height="11" rx="2"/><path d="M7 11V7a5 5 0 0 1 10 0v4"/></svg>
+    Consumption Rates
+  </button>
+  <button class="nav-btn" onclick="switchPage('skus',this)" title="Manage SKUs">
+    <svg fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><line x1="8" y1="6" x2="21" y2="6"/><line x1="8" y1="12" x2="21" y2="12"/><line x1="8" y1="18" x2="21" y2="18"/><line x1="3" y1="6" x2="3.01" y2="6"/><line x1="3" y1="12" x2="3.01" y2="12"/><line x1="3" y1="18" x2="3.01" y2="18"/></svg>
+    Manage SKUs
+  </button>
+</nav>
+
+<!-- ===== MAIN ===== -->
+<div class="main">
+<div class="topbar">
+  <div style="flex:1">
+    <div class="topbar-title" id="topbar-title">Dashboard</div>
+    <div class="topbar-sub" id="topbar-sub">Pilot: DS1 · 151 days · Dec 26 2025 → May 25 2026</div>
+  </div>
+  <span id="sync-status" style="font-size:11px;font-weight:500;margin-right:4px"></span>
+  <span style="font-size:12px;color:var(--faint)" id="last-updated"></span>
+  <button class="btn btn-sm" onclick="testConnection()" style="font-size:11px;padding:5px 10px">🔗 Test Sheet</button>
+  <button class="btn btn-sm btn-primary" onclick="openAddSku()">+ Add SKU</button>
+</div>
+
+<div class="content">
+
+<!-- ── DASHBOARD ── -->
+<div class="page active" id="page-dashboard">
+  <div class="metric-grid" id="metric-grid"></div>
+  <div class="grid2">
+    <div class="card">
+      <div class="card-title">
+        <svg width="15" height="15" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path d="M10.29 3.86L1.82 18a2 2 0 0 0 1.71 3h16.94a2 2 0 0 0 1.71-3L13.71 3.86a2 2 0 0 0-3.42 0z"/><line x1="12" y1="9" x2="12" y2="13"/><line x1="12" y1="17" x2="12.01" y2="17"/></svg>
+        Active Alerts
+      </div>
+      <div id="alerts-list"></div>
+    </div>
+    <div class="card">
+      <div class="card-title">
+        <svg width="15" height="15" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><rect x="3" y="3" width="18" height="18" rx="2"/><path d="M3 9h18M9 21V9"/></svg>
+        Facility Health
+      </div>
+      <div id="facility-health"></div>
+    </div>
+  </div>
+</div>
+
+<!-- ── FACILITY VIEW ── -->
+<div class="page" id="page-facility">
+  <div class="facility-tabs" id="facility-tabs">
+    <button class="ftab active" onclick="switchFacility('WH',this)">🏭 Warehouse<span style="display:block;font-size:9px;opacity:.6;font-weight:400">HH-WH-APP-GGN</span></button>
+    <button class="ftab" onclick="switchFacility('DS1',this)">🏪 Gurgaon<span style="display:block;font-size:9px;opacity:.6;font-weight:400">HH-DS-APP-GGN</span></button>
+    <button class="ftab" onclick="switchFacility('DS2',this)">🏪 Lajpat Nagar<span style="display:block;font-size:9px;opacity:.6;font-weight:400">HH-DS-APP-LJP</span></button>
+    <button class="ftab" onclick="switchFacility('DS3',this)">🏪 Noida<span style="display:block;font-size:9px;opacity:.6;font-weight:400">HH-DS-APP-NOI</span></button>
+  </div>
+  <div class="facility-stat-grid" id="facility-stats"></div>
+  <!-- Update log for this facility -->
+  <div class="card" style="margin-bottom:1rem;padding:1rem 1.25rem">
+    <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:.25rem">
+      <div style="font-size:13px;font-weight:500;display:flex;align-items:center;gap:8px">
+        <svg width="14" height="14" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/></svg>
+        Inventory Update Log
+      </div>
+      <button class="btn btn-sm" style="font-size:11px" onclick="clearFacilityLog(activeFacility)">Clear log</button>
+    </div>
+    <div id="facility-update-log"></div>
+  </div>
+  <div class="filter-row">
+    <select id="fac-filter-status" onchange="renderFacilityTable()">
+      <option value="all">All Status</option>
+      <option value="crit">Critical only</option>
+      <option value="warn">Warning only</option>
+      <option value="ok">OK only</option>
+    </select>
+    <select id="fac-filter-cat" onchange="renderFacilityTable()">
+      <option value="all">All Categories</option>
+      <option value="Washing Machine">Washing Machine</option>
+      <option value="Microwave">Microwave</option>
+      <option value="Refrigerator">Refrigerator</option>
+    </select>
+    <input type="text" id="fac-search" placeholder="Search SKU…" oninput="renderFacilityTable()">
+    <span class="result-count" id="fac-count"></span>
+    <button class="btn btn-sm btn-green" onclick="switchPage('update', document.querySelector('.nav-btn:nth-child(6)'))">+ Update Stock</button>
+  </div>
+  <div class="tbl-wrap" id="facility-table"></div>
+</div>
+
+<!-- ── INVENTORY TABLE ── -->
+<div class="page" id="page-inventory">
+  <div class="filter-row">
+    <select id="inv-store" onchange="renderInventory()">
+      <option value="all">All Locations</option>
+      <option value="DS1">Gurgaon (GGN)</option>
+      <option value="DS2">Lajpat Nagar (LJP)</option>
+      <option value="DS3">Noida (NOI)</option>
+    </select>
+    <select id="inv-status" onchange="renderInventory()">
+      <option value="all">All Status</option>
+      <option value="crit">Critical</option>
+      <option value="warn">Warning</option>
+      <option value="ok">OK</option>
+    </select>
+    <select id="inv-cat" onchange="renderInventory()">
+      <option value="all">All Categories</option>
+      <option value="Washing Machine">Washing Machine</option>
+      <option value="Microwave">Microwave</option>
+      <option value="Refrigerator">Refrigerator</option>
+    </select>
+    <input type="text" id="inv-search" placeholder="Search SKU…" oninput="renderInventory()">
+    <span class="result-count" id="inv-count"></span>
+  </div>
+  <div class="tbl-wrap" id="inventory-table"></div>
+</div>
+
+<!-- ── UPDATE STOCK ── -->
+<div class="page" id="page-update">
+<!-- ── EXCEL IMPORT CARD ── -->
+  <div class="card" style="margin-bottom:1rem" id="excel-import-card">
+    <div class="card-title">
+      <svg width="15" height="15" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/><line x1="16" y1="13" x2="8" y2="13"/><line x1="16" y1="17" x2="8" y2="17"/><polyline points="10 9 9 9 8 9"/></svg>
+      Bulk Import from Excel
+    </div>
+
+    <!-- Step 1: Facility selector -->
+    <div style="margin-bottom:1rem">
+      <p style="font-size:12px;font-weight:500;color:var(--muted);margin-bottom:.5rem">Step 1 — Select the facility this stock count is for:</p>
+      <div style="display:flex;gap:6px;flex-wrap:wrap">
+        <button class="ftab active" id="xls-tab-WH"  onclick="selectXlsFacility('WH',this)"  style="background:var(--surface2);border-radius:7px;border:1px solid var(--border)">🏭 Warehouse<span style="display:block;font-size:9px;opacity:.55;font-weight:400">HH-WH-APP-GGN</span></button>
+        <button class="ftab"        id="xls-tab-DS1" onclick="selectXlsFacility('DS1',this)" style="border-radius:7px;border:1px solid var(--border)">🏪 Gurgaon<span style="display:block;font-size:9px;opacity:.55;font-weight:400">HH-DS-APP-GGN</span></button>
+        <button class="ftab"        id="xls-tab-DS2" onclick="selectXlsFacility('DS2',this)" style="border-radius:7px;border:1px solid var(--border)">🏪 Lajpat Nagar<span style="display:block;font-size:9px;opacity:.55;font-weight:400">HH-DS-APP-LJP</span></button>
+        <button class="ftab"        id="xls-tab-DS3" onclick="selectXlsFacility('DS3',this)" style="border-radius:7px;border:1px solid var(--border)">🏪 Noida<span style="display:block;font-size:9px;opacity:.55;font-weight:400">HH-DS-APP-NOI</span></button>
+      </div>
+    </div>
+
+    <!-- Step 2: Drop zone -->
+    <p style="font-size:12px;font-weight:500;color:var(--muted);margin-bottom:.5rem">Step 2 — Upload the stock count Excel for <strong id="xls-facility-label">Warehouse</strong>:</p>
+    <div class="drop-zone" id="xls-drop" onclick="document.getElementById('xls-file-input').click()"
+         ondragover="event.preventDefault();this.classList.add('dragover')"
+         ondragleave="this.classList.remove('dragover')"
+         ondrop="handleXlsDrop(event)">
+      <svg width="32" height="32" fill="none" stroke="currentColor" stroke-width="1.5" viewBox="0 0 24 24" style="display:block;margin:0 auto"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="17 8 12 3 7 8"/><line x1="12" y1="3" x2="12" y2="15"/></svg>
+      <p style="margin-top:.5rem;font-weight:500">Drop Excel file here, or click to browse</p>
+      <small>Required columns: <strong>SKU Name</strong> · <strong>SKU Code</strong> · <strong>SKU Qty</strong> — SKUs matched by code</small>
+    </div>
+    <input type="file" id="xls-file-input" accept=".xlsx,.xls" style="display:none" onchange="handleXlsFile(this.files[0])">
+
+    <!-- Format hint -->
+    <div style="margin-top:.75rem;padding:.75rem 1rem;background:var(--bbg);border-radius:var(--rad);font-size:12px;color:var(--blue)">
+      <strong>Expected format:</strong>&nbsp;
+      <span class="col-tag">SKU Name</span>
+      <span class="col-tag">SKU Code</span>
+      <span class="col-tag">SKU Qty</span>
+      &nbsp;— The <em>SKU Qty</em> column becomes the new stock count at the selected facility. Column names are flexible (auto-detected).
+      <span id="xls-detected-cols" style="display:block;margin-top:4px"></span>
+    </div>
+
+    <!-- Preview table -->
+    <div class="import-preview" id="xls-preview" style="margin-top:1rem">
+      <div class="import-stats" id="xls-stats"></div>
+      <div style="max-height:280px;overflow-y:auto;margin-bottom:1rem">
+        <div class="tbl-wrap" id="xls-preview-table"></div>
+      </div>
+      <div style="display:flex;gap:8px;align-items:center">
+        <button class="btn btn-primary btn-sm" id="xls-apply-btn" onclick="applyXlsImport()">
+          ✅ Apply to <span id="xls-apply-facility-label">Warehouse</span>
+        </button>
+        <button class="btn btn-sm" onclick="resetXlsImport()">Clear</button>
+        <span id="xls-apply-msg" style="font-size:12px;color:var(--gmid);opacity:0;transition:opacity .3s"></span>
+      </div>
+    </div>
+  </div>
+
+  <!-- Bulk update panel -->
+  <div class="card" style="margin-bottom:1rem">
+    <div class="card-title">
+      <svg width="15" height="15" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"/><path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"/></svg>
+      Quick Stock Entry — Select Facility
+    </div>
+    <div style="display:flex;gap:6px;margin-bottom:1rem;flex-wrap:wrap">
+      <button class="ftab active" id="upd-tab-WH"  onclick="switchUpdateFacility('WH',this)"  style="background:var(--surface2);border-radius:7px;border:1px solid var(--border)">🏭 Warehouse<span style="display:block;font-size:9px;opacity:.55;font-weight:400">HH-WH-APP-GGN</span></button>
+      <button class="ftab" id="upd-tab-DS1" onclick="switchUpdateFacility('DS1',this)" style="border-radius:7px;border:1px solid var(--border)">🏪 Gurgaon<span style="display:block;font-size:9px;opacity:.55;font-weight:400">HH-DS-APP-GGN</span></button>
+      <button class="ftab" id="upd-tab-DS2" onclick="switchUpdateFacility('DS2',this)" style="border-radius:7px;border:1px solid var(--border)">🏪 Lajpat Nagar<span style="display:block;font-size:9px;opacity:.55;font-weight:400">HH-DS-APP-LJP</span></button>
+      <button class="ftab" id="upd-tab-DS3" onclick="switchUpdateFacility('DS3',this)" style="border-radius:7px;border:1px solid var(--border)">🏪 Noida<span style="display:block;font-size:9px;opacity:.55;font-weight:400">HH-DS-APP-NOI</span></button>
+    </div>
+    <p style="font-size:12px;color:var(--muted);margin-bottom:.75rem">
+      Edit the stock count for each SKU at <strong id="upd-facility-name">Warehouse</strong>. Changes auto-save and immediately update DOI & alerts.
+    </p>
+    <div class="filter-row" style="margin-bottom:.75rem">
+      <input type="text" id="upd-search" placeholder="Filter SKUs…" oninput="renderUpdateTable()" style="max-width:240px">
+      <select id="upd-cat" onchange="renderUpdateTable()">
+        <option value="all">All Categories</option>
+        <option value="Washing Machine">Washing Machine</option>
+        <option value="Microwave">Microwave</option>
+        <option value="Refrigerator">Refrigerator</option>
+      </select>
+      <button class="btn btn-sm" onclick="saveAllStockUpdates()">💾 Save All</button>
+      <span id="upd-saved-msg" style="font-size:12px;color:var(--gmid);opacity:0;transition:opacity .3s"></span>
+    </div>
+    <div class="tbl-wrap" id="update-table"></div>
+  </div>
+
+  <!-- Single SKU update form -->
+  <div class="card">
+    <div class="card-title">
+      <svg width="15" height="15" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="12"/><line x1="12" y1="16" x2="12.01" y2="16"/></svg>
+      Single SKU Update
+    </div>
+    <div class="modal-form-grid">
+      <div class="form-group">
+        <label>Facility</label>
+        <select id="single-facility">
+          <option value="WH">Warehouse</option>
+          <option value="DS1">Dark Store 1</option>
+          <option value="DS2">Dark Store 2</option>
+          <option value="DS3">Dark Store 3</option>
+        </select>
+      </div>
+      <div class="form-group">
+        <label>SKU</label>
+        <select id="single-sku" style="font-size:12px"></select>
+      </div>
+      <div class="form-group">
+        <label>New Stock Count</label>
+        <input type="number" id="single-qty" min="0" placeholder="Enter units">
+      </div>
+      <div class="form-group">
+        <label>Reason</label>
+        <select id="single-reason">
+          <option>Physical Count</option>
+          <option>Replenishment</option>
+          <option>Stock Receipt</option>
+          <option>Write-off</option>
+          <option>Correction</option>
+        </select>
+      </div>
+    </div>
+    <button class="btn btn-primary btn-sm" onclick="applySingleUpdate()">Apply Update</button>
+  </div>
+</div>
+
+<!-- ── REORDER QUEUE ── -->
+<div class="page" id="page-reorder">
+  <div style="display:flex;gap:8px;margin-bottom:1rem;align-items:center">
+    <select id="reo-filter" onchange="renderReorder()">
+      <option value="all">All Stores</option>
+      <option value="DS1">Gurgaon (GGN)</option>
+      <option value="DS2">Lajpat Nagar (LJP)</option>
+      <option value="DS3">Noida (NOI)</option>
+    </select>
+    <button class="btn btn-sm" onclick="replenishAllCritical()">⚡ Replenish All Critical</button>
+  </div>
+  <div id="reorder-content"></div>
+
+  <!-- ── INTER-STORE TRANSFER ── -->
+  <div class="card" style="margin-top:1rem">
+    <div class="card-title">
+      <svg width="15" height="15" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><polyline points="17 1 21 5 17 9"/><path d="M3 11V9a4 4 0 0 1 4-4h14"/><polyline points="7 23 3 19 7 15"/><path d="M21 13v2a4 4 0 0 1-4 4H3"/></svg>
+      Inter-Store Transfer
+    </div>
+    <p style="font-size:12px;color:var(--muted);margin-bottom:1rem">Move stock directly between dark stores — no warehouse required.</p>
+    <div class="transfer-form">
+      <div class="form-group">
+        <label>From Store</label>
+        <select id="xfr-from" onchange="refreshTransferPreview()">
+          <option value="WH">🏭 Warehouse (HH-WH-APP-GGN)</option>
+          <option value="DS1">🏪 Gurgaon (HH-DS-APP-GGN)</option>
+          <option value="DS2">🏪 Lajpat Nagar (HH-DS-APP-LJP)</option>
+          <option value="DS3">🏪 Noida (HH-DS-APP-NOI)</option>
+        </select>
+      </div>
+      <div class="form-group">
+        <label>To Store</label>
+        <select id="xfr-to" onchange="refreshTransferPreview()">
+          <option value="DS1">🏪 Gurgaon (HH-DS-APP-GGN)</option>
+          <option value="DS2">🏪 Lajpat Nagar (HH-DS-APP-LJP)</option>
+          <option value="DS3">🏪 Noida (HH-DS-APP-NOI)</option>
+          <option value="WH">🏭 Warehouse (HH-WH-APP-GGN)</option>
+        </select>
+      </div>
+      <div class="form-group">
+        <label>SKU</label>
+        <select id="xfr-sku" style="font-size:12px" onchange="refreshTransferPreview()"></select>
+      </div>
+      <div class="form-group">
+        <label>Quantity to Transfer</label>
+        <input type="number" id="xfr-qty" min="1" placeholder="Units" oninput="refreshTransferPreview()" style="font-family:inherit;font-size:13px;padding:8px 10px;border-radius:var(--rad);border:1px solid var(--border);background:var(--surface2);color:var(--text)">
+      </div>
+    </div>
+    <!-- Live preview strip -->
+    <div id="xfr-preview" style="display:none;background:var(--surface2);border-radius:var(--rad);padding:.75rem 1rem;margin-bottom:1rem;font-size:13px">
+      <div style="display:flex;align-items:center;gap:16px;flex-wrap:wrap">
+        <div>
+          <div style="font-size:11px;color:var(--muted);margin-bottom:2px">From</div>
+          <div style="font-weight:600" id="xfr-prev-from-name"></div>
+          <div class="store-stock-badge" id="xfr-prev-from-stock"></div>
+        </div>
+        <div style="font-size:20px;color:var(--bmid)">→</div>
+        <div>
+          <div style="font-size:11px;color:var(--muted);margin-bottom:2px">To</div>
+          <div style="font-weight:600" id="xfr-prev-to-name"></div>
+          <div class="store-stock-badge" id="xfr-prev-to-stock"></div>
+        </div>
+        <div style="margin-left:auto;text-align:right">
+          <div style="font-size:11px;color:var(--muted);margin-bottom:2px">Transferring</div>
+          <div style="font-size:18px;font-weight:600;font-family:'DM Mono',monospace;color:var(--bmid)" id="xfr-prev-qty"></div>
+        </div>
+      </div>
+      <div id="xfr-warn" style="margin-top:.5rem;font-size:12px;color:var(--red);display:none"></div>
+    </div>
+    <div style="display:flex;gap:8px;align-items:center">
+      <button class="btn btn-primary btn-sm" onclick="applyTransfer()">
+        <svg width="13" height="13" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><polyline points="17 1 21 5 17 9"/><path d="M3 11V9a4 4 0 0 1 4-4h14"/></svg>
+        Execute Transfer
+      </button>
+      <span id="xfr-success" style="font-size:12px;color:var(--gmid);opacity:0;transition:opacity .3s"></span>
+    </div>
+  </div>
+</div>
+
+<!-- ── CONSUMPTION (password-protected) ── -->
+<div class="page" id="page-consumption">
+  <div class="pw-gate" id="cons-pw-gate">
+    <div class="pw-box">
+      <div style="font-size:32px;margin-bottom:8px">🔒</div>
+      <h3>Consumption Rates</h3>
+      <p>This section contains pilot-derived consumption data.<br>Enter the admin password to view.</p>
+      <input type="password" class="pw-input" id="cons-pw-input" placeholder="••••••••" onkeydown="if(event.key==='Enter')checkPassword()">
+      <div class="pw-error" id="cons-pw-error"></div>
+      <button class="btn btn-primary" style="width:100%" onclick="checkPassword()">Unlock</button>
+      <p style="font-size:11px;color:var(--faint);margin-top:12px">View-only. Contact admin to update rates.</p>
+    </div>
+  </div>
+  <div class="cons-table-wrap" id="cons-table-wrap">
+    <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:1rem">
+      <div>
+        <p style="font-size:13px;color:var(--muted)">📊 View-only · 298 SKUs · DS1 pilot (151 days) · DS2 & DS3 mirror DS1 as baseline</p>
+      </div>
+      <button class="btn btn-sm" onclick="lockConsumption()">🔒 Lock</button>
+    </div>
+    <div class="filter-row" style="margin-bottom:.75rem">
+      <input type="text" id="cons-search" placeholder="Search SKU…" oninput="renderConsumptionTable()">
+      <select id="cons-cat" onchange="renderConsumptionTable()">
+        <option value="all">All Categories</option>
+        <option value="Washing Machine">Washing Machine</option>
+        <option value="Microwave">Microwave</option>
+        <option value="Refrigerator">Refrigerator</option>
+      </select>
+    </div>
+    <div class="tbl-wrap" id="cons-table"></div>
+  </div>
+</div>
+
+<!-- ── MANAGE SKUs ── -->
+<div class="page" id="page-skus">
+  <div style="display:flex;justify-content:flex-end;margin-bottom:1rem">
+    <button class="btn btn-sm btn-primary" onclick="openAddSku()">+ Add SKU</button>
+  </div>
+  <div class="tbl-wrap" id="sku-manage-table"></div>
+</div>
+
+</div><!-- .content -->
+</div><!-- .main -->
+</div><!-- .shell -->
+
+<!-- ADD SKU MODAL -->
+<div class="modal-overlay" id="modal-add">
+  <div class="modal">
+    <div class="modal-header">
+      <span class="modal-title" id="modal-title-text">Add New SKU</span>
+      <button class="modal-close" onclick="closeModal('modal-add')">&times;</button>
+    </div>
+    <div class="modal-form-grid">
+      <div class="form-group mfg-full"><label>SKU Name *</label><input id="m-name" placeholder="e.g. Samsung TLD Drain Motor"></div>
+      <div class="form-group"><label>Category</label>
+        <select id="m-cat"><option>Washing Machine</option><option>Microwave</option><option>Refrigerator</option><option>Other</option></select>
+      </div>
+      <div class="form-group"><label>Reorder Threshold (days)</label><input id="m-thresh" type="number" value="7" min="1"></div>
+    </div>
+    <p style="font-size:11px;font-weight:600;color:var(--faint);text-transform:uppercase;letter-spacing:.5px;margin:1rem 0 .5rem">Opening Stock</p>
+    <div class="modal-form-grid">
+      <div class="form-group"><label>Warehouse</label><input id="m-wh" type="number" value="0" min="0"></div>
+      <div class="form-group"><label>Dark Store 1</label><input id="m-ds1" type="number" value="0" min="0"></div>
+      <div class="form-group"><label>Dark Store 2</label><input id="m-ds2" type="number" value="0" min="0"></div>
+      <div class="form-group"><label>Dark Store 3</label><input id="m-ds3" type="number" value="0" min="0"></div>
+    </div>
+    <p style="font-size:11px;font-weight:600;color:var(--faint);text-transform:uppercase;letter-spacing:.5px;margin:1rem 0 .5rem">Daily Consumption (DS1 pilot — DS2 & DS3 will mirror)</p>
+    <div class="modal-form-grid">
+      <div class="form-group"><label>DS1 Rate (units/day)</label><input id="m-c1" type="number" value="0" min="0" step="0.01"></div>
+    </div>
+    <div class="modal-footer">
+      <button class="btn" onclick="closeModal('modal-add')">Cancel</button>
+      <button class="btn btn-primary" onclick="saveSku()">Save SKU</button>
+    </div>
+  </div>
+</div>
+
+<div class="toast-wrap"><div class="toast" id="toast"></div></div>
+
+<script>
+// ─────────────────────────────────────────────
+// DATA
+// ─────────────────────────────────────────────
+const STORES=['DS1','DS2','DS3'],LOCS=['WH','DS1','DS2','DS3'];
+const NAMES={WH:'Central Warehouse',DS1:'Gurgaon',DS2:'Lajpat Nagar',DS3:'Noida'};
+const CODES={WH:'HH-WH-APP-GGN',DS1:'HH-DS-APP-GGN',DS2:'HH-DS-APP-LJP',DS3:'HH-DS-APP-NOI'};
+
+// ─── GOOGLE SHEETS SYNC CONFIG ───────────────────────────
+// Paste your Apps Script Web App URL here after deploying
+const SHEETS_URL = 'https://script.google.com/macros/s/AKfycbxIWuL6mcZBB1c2PNP2ZdH_iCaNzI_40vB7xEiLigD58Kr1q8F1GgPhuiboPa_G_m9RhQ/exec';   // e.g. 'https://script.google.com/macros/s/ABC123/exec'
+const SYNC_ENABLED = () => SHEETS_URL.trim().length > 0;
+
+// Pending writes queue — batches updates before sending to Sheet
+let pendingWrites = {};  // { skuId_loc: { id, loc, qty } }
+let syncTimer = null;
+const SYNC_DELAY_MS = 1500;  // wait 1.5s after last change before syncing
+
+function queueSync(skuId, loc, qty, logEntry) {
+  pendingWrites[skuId + '_' + loc] = { id: skuId, loc, qty };
+  if (logEntry) window._pendingLogEntry = logEntry;
+  clearTimeout(syncTimer);
+  syncTimer = setTimeout(flushSync, SYNC_DELAY_MS);
+  setSyncStatus('pending');
+}
+
+async function flushSync() {
+  if (!SYNC_ENABLED() || !Object.keys(pendingWrites).length) return;
+  const updates = Object.values(pendingWrites);
+  pendingWrites = {};
+  setSyncStatus('syncing');
+  try {
+    const logEntry = window._pendingLogEntry || null;
+    window._pendingLogEntry = null;
+    // Chunk updates so each GET URL stays under 2000 chars
+    const CHUNK = 20;
+    for (let i = 0; i < updates.length; i += CHUNK) {
+      const chunk = updates.slice(i, i + CHUNK);
+      const payload = { action:'updateStock', updates: chunk };
+      if (i === 0 && logEntry) payload.logEntry = logEntry;
+      await sheetGet(payload);
+    }
+    setSyncStatus('ok');
+  } catch(err) {
+    setSyncStatus('error', err.message);
+    console.error('Sync failed:', err);
+  }
+}
+
+// ── JSONP transport — bypasses CORS entirely ──────────────────────────
+// Uses script-tag injection instead of fetch so no CORS headers needed.
+function jsonpGet(payload) {
+  return new Promise(function(resolve, reject) {
+    const cbName = '_gs_' + Date.now() + '_' + Math.floor(Math.random()*1e6);
+    const url = SHEETS_URL + '?callback=' + cbName +
+                '&data=' + encodeURIComponent(JSON.stringify(payload));
+    const script = document.createElement('script');
+    const timer = setTimeout(function() {
+      cleanup();
+      reject(new Error('Timeout — script did not load in 10s. Check the URL and deployment.'));
+    }, 10000);
+    function cleanup() {
+      clearTimeout(timer);
+      delete window[cbName];
+      if (script.parentNode) script.parentNode.removeChild(script);
+    }
+    window[cbName] = function(data) {
+      cleanup();
+      if (data && data.ok === false) reject(new Error(data.error || 'Sheet error'));
+      else resolve(data);
+    };
+    script.onerror = function() {
+      cleanup();
+      reject(new Error('Script load failed — check Apps Script URL'));
+    };
+    script.src = url;
+    document.head.appendChild(script);
+  });
+}
+
+// Alias — all sync calls use this
+async function sheetGet(payload) {
+  return jsonpGet(payload);
+}
+
+function setSyncStatus(state, msg) {
+  const el = document.getElementById('sync-status');
+  if (!el) return;
+  const cfg = {
+    ok:      { text: '✓ Synced to Sheet',  color: 'var(--gmid)',  dot: '#639922' },
+    pending: { text: '● Saving…',          color: 'var(--amid)',  dot: '#EF9F27' },
+    syncing: { text: '↻ Syncing…',         color: 'var(--bmid)',  dot: '#378ADD' },
+    error:   { text: '✗ Sync failed',      color: 'var(--rmid)',  dot: '#E24B4A' },
+    off:     { text: 'Offline mode',       color: 'var(--faint)', dot: '#9e9e99' },
+  };
+  const c = cfg[state] || cfg.off;
+  el.innerHTML = `<span style="display:inline-block;width:7px;height:7px;border-radius:50%;background:${c.dot};margin-right:5px;vertical-align:middle"></span>${c.text}${msg?' · '+msg:''}`;
+  el.style.color = c.color;
+}
+
+async function loadFromSheet() {
+  if (!SYNC_ENABLED()) { setSyncStatus('off'); return; }
+  setSyncStatus('syncing');
+  try {
+    const json = await jsonpGet({ action: 'all' });
+    if (!json || !json.ok) throw new Error((json && json.error) || 'Sheet error');
+    const d = json.data;
+
+    // Sheet is empty (just set up, no data yet) — push hardcoded data to it
+    if (!d.skus || d.skus.length === 0) {
+      setSyncStatus('syncing');
+      await pushInitDataToSheet();
+      setSyncStatus('ok');
+      renderAll();
+      return;
+    }
+
+    // Load SKUs from sheet
+    skus = d.skus.map(s => ({
+      id:        Number(s.id),
+      skuid:     String(s.skuid),
+      code:      String(s.code),
+      name:      String(s.name),
+      cat:       String(s.cat),
+      threshold: Number(s.threshold)
+    }));
+
+    // Load stock
+    Object.entries(d.stock).forEach(([id, locs]) => {
+      inventory[Number(id)] = {
+        WH:  Number(locs.WH) ||0,
+        DS1: Number(locs.DS1)||0,
+        DS2: Number(locs.DS2)||0,
+        DS3: Number(locs.DS3)||0
+      };
+    });
+
+    // Load consumption
+    Object.entries(d.consumption).forEach(([id, rates]) => {
+      consumption[Number(id)] = {
+        DS1: Number(rates.DS1)||0,
+        DS2: Number(rates.DS2)||0,
+        DS3: Number(rates.DS3)||0
+      };
+    });
+
+    // Load update log
+    if (d.log && d.log.length) {
+      d.log.forEach(entry => {
+        const loc = entry.facility;
+        if (stockUpdateLog[loc]) {
+          stockUpdateLog[loc].unshift({
+            ts: new Date(entry.ts),
+            skusChanged: entry.skusChanged,
+            method: entry.method,
+            summary: entry.summary
+          });
+        }
+      });
+    }
+
+    nextId = skus.length ? Math.max(...skus.map(s => Number(s.id))) + 1 : 1;
+    setSyncStatus('ok');
+    renderAll();
+
+  } catch(err) {
+    setSyncStatus('error', err.message);
+    console.warn('Sheet load failed, using local data:', err.message);
+    renderAll();  // fall back to hardcoded data — dashboard still works
+  }
+}
+
+async function pushInitDataToSheet() {
+  // Push pilot data to empty sheet in chunks (GET URL limit ~2000 chars)
+  const CHUNK = 30;
+  // Push SKUs
+  for (let i = 0; i < skus.length; i += CHUNK) {
+    await sheetGet({ action:'initSkus', skus: skus.slice(i, i+CHUNK) });
+  }
+  // Push stock
+  const stockArr = skus.map(s => ({ id:s.id, WH:inventory[s.id].WH, DS1:inventory[s.id].DS1, DS2:inventory[s.id].DS2, DS3:inventory[s.id].DS3 }));
+  for (let i = 0; i < stockArr.length; i += CHUNK) {
+    await sheetGet({ action:'initStock', rows: stockArr.slice(i, i+CHUNK) });
+  }
+  // Push consumption
+  const consArr = skus.map(s => ({ id:s.id, DS1:consumption[s.id].DS1, DS2:consumption[s.id].DS2, DS3:consumption[s.id].DS3 }));
+  for (let i = 0; i < consArr.length; i += CHUNK) {
+    await sheetGet({ action:'initCons', rows: consArr.slice(i, i+CHUNK) });
+  }
+}
+
+// ─── UPDATE LOG ───────────────────────────────
+// stockUpdateLog[loc] = array of {ts, skusChanged, method, summary}
+const stockUpdateLog={WH:[],DS1:[],DS2:[],DS3:[]};
+const MAX_LOG_ENTRIES=50;
+
+function logStockUpdate(loc, skusChanged, method, summary){
+  const entry={
+    ts: new Date(),
+    skusChanged,
+    method,   // 'manual'|'bulk'|'excel'|'replenish'|'single'
+    summary
+  };
+  stockUpdateLog[loc].unshift(entry);
+  if(stockUpdateLog[loc].length>MAX_LOG_ENTRIES)
+    stockUpdateLog[loc].length=MAX_LOG_ENTRIES;
+}
+
+function fmtTs(d){
+  const pad=n=>String(n).padStart(2,'0');
+  const day=d.getDate(),mon=d.toLocaleString('en',{month:'short'});
+  const h=pad(d.getHours()),m=pad(d.getMinutes()),s=pad(d.getSeconds());
+  return `${day} ${mon} ${d.getFullYear()}, ${h}:${m}:${s}`;
+}
+
+function clearFacilityLog(loc){
+  stockUpdateLog[loc]=[];
+  renderFacilityUpdateLog();
+}
+
+function renderFacilityUpdateLog(){
+  const loc=activeFacility;
+  const entries=stockUpdateLog[loc];
+  const el=document.getElementById('facility-update-log');
+  if(!el)return;
+  if(!entries.length){
+    el.innerHTML='<div class="upd-log-empty">No updates recorded for this facility yet.</div>';
+    return;
+  }
+  const methodColor={
+    manual:'var(--bmid)',bulk:'var(--bmid)',excel:'var(--gmid)',
+    replenish:'var(--amid)',single:'var(--bmid)'
+  };
+  const methodLabel={
+    manual:'Manual entry',bulk:'Bulk save',excel:'Excel import',
+    replenish:'Replenishment',single:'Single update'
+  };
+  el.innerHTML=entries.map(e=>`
+    <div class="upd-log-entry">
+      <span class="upd-log-time">${fmtTs(e.ts)}</span>
+      <span class="upd-log-badge" style="background:var(--bbg);color:${methodColor[e.method]||'var(--bmid)'}">${methodLabel[e.method]||e.method}</span>
+      <span class="upd-log-detail">${e.summary}</span>
+    </div>`).join('');
+}
+const CONS_PASSWORD='UC@Inventory2026';
+let consUnlocked=false;
+let activeFacility='WH';
+let updateFacility='WH';
+let editingSkuId=null;
+
+let skus=[
+  {id:1,skuid:'SKU001',code:'UC/MW_1/UNI',name:'Universal, , HV Fuse Assembly',cat:'Microwave',threshold:5},
+  {id:2,skuid:'SKU002',code:'UC/MW_2/BIC',name:'Bicai, Capacitor, HV Capacitor 1.10 MFD',cat:'Microwave',threshold:7},
+  {id:3,skuid:'SKU003',code:'UC/LAOA/WM/LIQUID',name:'Universal, Universal, Descaler Liquid',cat:'Washing Machine',threshold:7},
+  {id:4,skuid:'SKU004',code:'UC/MW_15/UNI',name:'Universal, , Door Switch - Set of 3',cat:'Microwave',threshold:7},
+  {id:5,skuid:'SKU005',code:'UC/RF_20/LG/DOD',name:'LG, Double Door, Relay Common 4pin',cat:'Refrigerator',threshold:7},
+  {id:6,skuid:'SKU006',code:'UC/WM/DESCALER',name:'Universal, Universal, Descaler',cat:'Washing Machine',threshold:7},
+  {id:7,skuid:'SKU007',code:'UC/MW_3/FB610A',name:'Universal, FB610A, Magnetron (FB610A)',cat:'Microwave',threshold:7},
+  {id:8,skuid:'SKU008',code:'UC/RF_29/LG/SOD',name:'LG, Single Door, OLP Common',cat:'Refrigerator',threshold:7},
+  {id:9,skuid:'SKU009',code:'UC/RF_1/UNI/DOD',name:'Universal, Double Door, Dryer 25Grams',cat:'Refrigerator',threshold:7},
+  {id:10,skuid:'SKU010',code:'UC/WM_2/LG/TLD',name:'LG, Top-Load, Drain Pipe',cat:'Washing Machine',threshold:7},
+  {id:11,skuid:'SKU011',code:'UC/WM_133/UNI/TLD',name:'Universal, Top load, Inlet pipe 1.5 meter',cat:'Washing Machine',threshold:7},
+  {id:12,skuid:'SKU012',code:'UC/RF_2/UNI/DOD',name:'Universal, Double Door, Pin valve 1/4',cat:'Refrigerator',threshold:7},
+  {id:13,skuid:'SKU013',code:'UC/WM_3/SMG/TLD',name:'Samsung, Top-Load, Tap Adaptor',cat:'Washing Machine',threshold:7},
+  {id:14,skuid:'SKU014',code:'UC/WM_294/IFB/TLD',name:'IFB, Top load, Water Filter',cat:'Washing Machine',threshold:10},
+  {id:15,skuid:'SKU015',code:'UC/WM_1/SMG/TLD',name:'Samsung, Top-Load, AC Inlet Valve 1 way',cat:'Washing Machine',threshold:10},
+  {id:16,skuid:'SKU016',code:'UC/WM_5/LG/TLD',name:'LG, Top-Load, AC Drain Motor',cat:'Washing Machine',threshold:10},
+  {id:17,skuid:'SKU017',code:'UC/WM_72/SMG/TLD',name:'Samsung, Top-Load, Pulsator Snap',cat:'Washing Machine',threshold:10},
+  {id:18,skuid:'SKU018',code:'UC/MW_12/UNI',name:'Universal, , HV Single Diode',cat:'Microwave',threshold:10},
+  {id:19,skuid:'SKU019',code:'UC/MW_5/FA410A',name:'Universal, FA410A, Magnetron (FA410A)',cat:'Microwave',threshold:10},
+  {id:20,skuid:'SKU020',code:'UC/MW_7/UNI',name:'Universal, , Bulb with holder',cat:'Microwave',threshold:10},
+  {id:21,skuid:'SKU021',code:'UC/WM_6/WHP/TLD',name:'Whirlpool, Top-Load, AC Inlet Valve 1 way',cat:'Washing Machine',threshold:10},
+  {id:22,skuid:'SKU022',code:'UC/MW_8/SMG',name:'Samsung, , Fan Motor 3 pin',cat:'Microwave',threshold:10},
+  {id:23,skuid:'SKU023',code:'UC/WM_188/UNI/FLD',name:'Universal, Top load, Water Filter',cat:'Washing Machine',threshold:10},
+  {id:24,skuid:'SKU024',code:'UC/MW_13/2M214',name:'Universal, 2M214, Magnetron (2M214)',cat:'Microwave',threshold:14},
+  {id:25,skuid:'SKU025',code:'UC/WM_16/LG/TLD',name:'LG, Top-Load, Damper rod / Balancing Rods (4 Qty)',cat:'Washing Machine',threshold:14},
+  {id:26,skuid:'SKU026',code:'UC/RF_90/UNI/E14',name:'Universal, Universal, LED Bulb E14',cat:'Refrigerator',threshold:14},
+  {id:27,skuid:'SKU027',code:'UC/WM_10/SMG/FLD',name:'Samsung, Front-Load, Drain Pipe',cat:'Washing Machine',threshold:14},
+  {id:28,skuid:'SKU028',code:'UC/WM_8/IFB/FLD',name:'IFB, Front-Load, Shocker Set - 2 pieces',cat:'Washing Machine',threshold:14},
+  {id:29,skuid:'SKU029',code:'UC/MW_6/UNI',name:'Universal, , Mica Sheet',cat:'Microwave',threshold:14},
+  {id:30,skuid:'SKU030',code:'UC/WM_213/IFB/FLD',name:'IFB, Front load, IFB ORIGNAL DOOR LOCK',cat:'Washing Machine',threshold:14},
+  {id:31,skuid:'SKU031',code:'UC/WM_15/LG/TLD',name:'LG, Top-Load, Shocker Set - 2 pieces',cat:'Washing Machine',threshold:14},
+  {id:32,skuid:'SKU032',code:'UC/RF_8/SMG/DOD',name:'Samsung, Double Door, Sensor 5K',cat:'Refrigerator',threshold:14},
+  {id:33,skuid:'SKU033',code:'UC/WM_17/SMG/TLD',name:'Samsung, Top-Load, Damper rod / Balancing Rods (4 Qty)',cat:'Washing Machine',threshold:14},
+  {id:34,skuid:'SKU034',code:'UC/WM_177/UNI/SMI',name:'Universal, Semi Automatic, washing machine seal',cat:'Washing Machine',threshold:14},
+  {id:35,skuid:'SKU035',code:'UC/RF_89/UNI/E12',name:'Universal, Universal, LED Bulb E12',cat:'Refrigerator',threshold:14},
+  {id:36,skuid:'SKU036',code:'UC/WM_169/WHP/TLD',name:'Whirlpool, Top load, Capacitor Whirlpool',cat:'Washing Machine',threshold:14},
+  {id:37,skuid:'SKU037',code:'UC/RF_40/WHP/DOD',name:'Whirlpool, Double Door, Sensor 8K',cat:'Refrigerator',threshold:14},
+  {id:38,skuid:'SKU038',code:'UC/WM_42/LG/SMI',name:'LG, Semi-Automatic, Spin & Wash Capacitor',cat:'Washing Machine',threshold:14},
+  {id:39,skuid:'SKU039',code:'UC/WM_171/LG/FLD',name:'LG, Front load, Drain Pump AC 220 v',cat:'Washing Machine',threshold:14},
+  {id:40,skuid:'SKU040',code:'UC/RF_88/LG/TLD',name:'LG, Top load, Pressure Sensor',cat:'Refrigerator',threshold:14},
+  {id:41,skuid:'SKU041',code:'UC/WM_63/LG/SMI',name:'LG, Semi-Automatic, Spin Motor',cat:'Washing Machine',threshold:14},
+  {id:42,skuid:'SKU042',code:'UC/RF_51/SMG/SOD',name:'Samsung, Single Door, Capacitor 5uf',cat:'Refrigerator',threshold:14},
+  {id:43,skuid:'SKU043',code:'UC/WM_75/SMG/SMI',name:'Samsung, Semi-Automatic, Spin Motor',cat:'Washing Machine',threshold:14},
+  {id:44,skuid:'SKU044',code:'UC/WM_240/LG/SMI',name:'LG, Semi Automatic, Drain bellow',cat:'Washing Machine',threshold:14},
+  {id:45,skuid:'SKU045',code:'UC/WM_46/SMG/TLD',name:'Samsung, Top-Load, V Belt',cat:'Washing Machine',threshold:14},
+  {id:46,skuid:'SKU046',code:'UC/WM_101/GRJ/FLD',name:'Godrej, Front-Load, Shocker Set - 2 pieces',cat:'Washing Machine',threshold:21},
+  {id:47,skuid:'SKU047',code:'UC/WM_76/BSC/FLD',name:'Bosch, Front-Load, V Belt',cat:'Washing Machine',threshold:21},
+  {id:48,skuid:'SKU048',code:'UC/RF_19/LG/DOD',name:'LG, Double Door, Defrost Sensor with Thermal fuse',cat:'Refrigerator',threshold:21},
+  {id:49,skuid:'SKU049',code:'UC/WM_12/LG/TLD',name:'LG, Top-Load, AC Inlet Valve 1 way',cat:'Washing Machine',threshold:21},
+  {id:50,skuid:'SKU050',code:'UC/RF_6/WHP/DOD',name:'Whirlpool, Double Door, Bimetal',cat:'Refrigerator',threshold:21},
+  {id:51,skuid:'SKU051',code:'UC/WM_235/LG/FLD',name:'LG, Front load, Shocker set 3 peice',cat:'Washing Machine',threshold:21},
+  {id:52,skuid:'SKU052',code:'UC/WM_134/UNI/TLD',name:'Universal, Top load, Inlet pipe 2 Mtr',cat:'Washing Machine',threshold:21},
+  {id:53,skuid:'SKU053',code:'UC/WM_236/BSC/FLD',name:'Bosch, Front load, Shocker set 3 peice',cat:'Washing Machine',threshold:21},
+  {id:54,skuid:'SKU054',code:'UC/RF_9/SMG/DOD/T1',name:'Samsung, Double Door, Defrost Sensor',cat:'Refrigerator',threshold:21},
+  {id:55,skuid:'SKU055',code:'UC/WM_20/SMG/FLD',name:'Samsung, Front-Load, Shocker Set - 2 pieces',cat:'Washing Machine',threshold:21},
+  {id:56,skuid:'SKU056',code:'UC/RF_10/UNI/DOD/15GM',name:'Universal, Double Door, Dryer Set of 10',cat:'Refrigerator',threshold:21},
+  {id:57,skuid:'SKU057',code:'UC/WM_14/SMG/TLD',name:'Samsung, Top-Load, AC Drain Motor',cat:'Washing Machine',threshold:21},
+  {id:58,skuid:'SKU058',code:'UC/WM_13/WHP/TLD',name:'Whirlpool, Top-Load, Damper rod / Balancing Rods (4 Qty)',cat:'Washing Machine',threshold:21},
+  {id:59,skuid:'SKU059',code:'UC/WM_282/LG/INV',name:'LG, Inverter, Pressure sensor',cat:'Washing Machine',threshold:21},
+  {id:60,skuid:'SKU060',code:'UC/RF_11/UNI/DOD',name:'Universal, Double Door, Pin Valve Set of 10',cat:'Refrigerator',threshold:21},
+  {id:61,skuid:'SKU061',code:'UC/RF_14/WHP/DOD',name:'Whirlpool, Double Door, Relay',cat:'Refrigerator',threshold:21},
+  {id:62,skuid:'SKU062',code:'UC/RF_1/LG/SOD/T1',name:'LG, single door, Thermostat Single Door',cat:'Refrigerator',threshold:21},
+  {id:63,skuid:'SKU063',code:'UC/WM_9/LG/TLD',name:'LG, Top-Load, Chuck Nut',cat:'Washing Machine',threshold:21},
+  {id:64,skuid:'SKU064',code:'UC/RF_5/LG/DOD/4Wire',name:'LG, Double Door, Thermal Fuse With Bimetal',cat:'Refrigerator',threshold:21},
+  {id:65,skuid:'SKU065',code:'UC/RF_1/WHP/SOD/R134',name:'Whirlpool, single door, Thermostat Single Door',cat:'Refrigerator',threshold:21},
+  {id:66,skuid:'SKU066',code:'UC/WM_50/WHP/SMI',name:'Whirlpool, Semi-Automatic, Gear Box (With Pulley) 290+45',cat:'Washing Machine',threshold:21},
+  {id:67,skuid:'SKU067',code:'UC/WM_11/LG/FLD',name:'LG, Front-Load, AC Inlet Valve 2 way',cat:'Washing Machine',threshold:21},
+  {id:68,skuid:'SKU068',code:'UC/WM_98/OND/SMI',name:'Onida, Semi-Automatic, V Belt',cat:'Washing Machine',threshold:21},
+  {id:69,skuid:'SKU069',code:'UC/WM_180/SMG/TLD',name:'Samsung, Top load, DV Case',cat:'Washing Machine',threshold:21},
+  {id:70,skuid:'SKU070',code:'UC/WM_97/IFB/TLD',name:'IFB, Top-Load, V Belt',cat:'Washing Machine',threshold:21},
+  {id:71,skuid:'SKU071',code:'UC/MW_29/LG/HVT',name:'LG, HVT, HVT',cat:'Microwave',threshold:21},
+  {id:72,skuid:'SKU072',code:'UC/WM_19/SMG/FLD',name:'Samsung, Front-Load, AC Inlet Valve 2 way',cat:'Washing Machine',threshold:21},
+  {id:73,skuid:'SKU073',code:'UC/WM_32/WHP/TLD',name:'Whirlpool, Top-Load, AC Drain Motor',cat:'Washing Machine',threshold:21},
+  {id:74,skuid:'SKU074',code:'UC/MW_10/UNI',name:'Universal, , Main Fuse 5 / 15 Amp Cermaic',cat:'Microwave',threshold:21},
+  {id:75,skuid:'SKU075',code:'UC/WM_143/SMG/TLD',name:'Samsung, Top load, Pressure Sensor',cat:'Washing Machine',threshold:21},
+  {id:76,skuid:'SKU076',code:'UC/WM_33/LG/TLD',name:'LG, Top-Load, DC Inlet Valve 2 way',cat:'Washing Machine',threshold:21},
+  {id:77,skuid:'SKU077',code:'UC/RF_13/UNI/SOD',name:'Universal, Double Door, OLP Set of 10',cat:'Refrigerator',threshold:21},
+  {id:78,skuid:'SKU078',code:'UC/WM_179/LG/TLD',name:'LG, Top load, DV Case',cat:'Washing Machine',threshold:21},
+  {id:79,skuid:'SKU079',code:'UC/MW_16/LG',name:'LG, , Turn Table Motor 220V',cat:'Microwave',threshold:21},
+  {id:80,skuid:'SKU080',code:'UC/WM_158/LG/FLD',name:'LG, Front load, Door lock',cat:'Washing Machine',threshold:21},
+  {id:81,skuid:'SKU081',code:'UC/RF_31/SMG/DOD',name:'Samsung, Double Door, DC Fan Motor - Freezer',cat:'Refrigerator',threshold:21},
+  {id:82,skuid:'SKU082',code:'UC/RF_23/WHP/DOD',name:'Whirlpool, Double Door, Defrost Timer T2',cat:'Refrigerator',threshold:21},
+  {id:83,skuid:'SKU083',code:'UC/WM_64/OND/TLD',name:'Onida, Top-Load, AC Drain Motor',cat:'Washing Machine',threshold:21},
+  {id:84,skuid:'SKU084',code:'UC/WM_22/SMG/TLD',name:'Samsung, Top-Load, AC Inlet Valve 2 way',cat:'Washing Machine',threshold:21},
+  {id:85,skuid:'SKU085',code:'UC/WM_13/WHP/TLD/L1',name:'Whirlpool, Top load, Damper rod / Balancing Rods (4 Qty)',cat:'Washing Machine',threshold:21},
+  {id:86,skuid:'SKU086',code:'UC/RF_10/LG/DOD',name:'LG, Double Door, Defrost Timer T1',cat:'Refrigerator',threshold:21},
+  {id:87,skuid:'SKU087',code:'UC/WM_26/LG/TLD',name:'LG, Top-Load, Clutch assembly double',cat:'Washing Machine',threshold:21},
+  {id:88,skuid:'SKU088',code:'UC/WM_30/LG/FLD',name:'LG, Front-Load, Hall sensor',cat:'Washing Machine',threshold:21},
+  {id:89,skuid:'SKU089',code:'UC/RF_16/UNI/R600A',name:'Universal, Universal, Gas R600A',cat:'Refrigerator',threshold:21},
+  {id:90,skuid:'SKU090',code:'UC/WM_96/LG/SMI',name:'LG, Semi-Automatic, Gear Box (With Pulley)',cat:'Washing Machine',threshold:21},
+  {id:91,skuid:'SKU091',code:'UC/WM_99/SMG/FLD',name:'Samsung, Front-Load, AC Inlet valve 3/4 way',cat:'Washing Machine',threshold:21},
+  {id:92,skuid:'SKU092',code:'UC/RF_1/SMG/SOD/T1',name:'Samsung, single door, Thermostat Single Door',cat:'Refrigerator',threshold:21},
+  {id:93,skuid:'SKU093',code:'UC/WM_81/LG/TLD',name:'LG, Top-Load, Pulsator Snap',cat:'Washing Machine',threshold:21},
+  {id:94,skuid:'SKU094',code:'UC/RF_12/UNI/DOD/4PIN',name:'Universal, Double Door, Relay Set of 10',cat:'Refrigerator',threshold:21},
+  {id:95,skuid:'SKU095',code:'UC/WM_251/HIR/TLD',name:'Haier, Top load, Drain Pipe',cat:'Washing Machine',threshold:21},
+  {id:96,skuid:'SKU096',code:'UC/WM_29/IFB/FLD',name:'IFB, Front-Load, AC Inlet Valve 2 way',cat:'Washing Machine',threshold:21},
+  {id:97,skuid:'SKU097',code:'UC/WM_135/UNI/FLD',name:'Universal, Front load, Inlet pipe 3 Mtr',cat:'Washing Machine',threshold:21},
+  {id:98,skuid:'SKU098',code:'UC/RF_28/SMG/DOD',name:'Samsung, Double Door, Thermal Fuse and Bimetal both',cat:'Refrigerator',threshold:21},
+  {id:99,skuid:'SKU099',code:'UC/RF_7/WHP/DOD/T1',name:'Whirlpool, Double Door, Thermal Fuse',cat:'Refrigerator',threshold:21},
+  {id:100,skuid:'SKU100',code:'UC/WM_45/LG/TLD',name:'LG, Top-Load, Lint / Magic filter',cat:'Washing Machine',threshold:21},
+  {id:101,skuid:'SKU101',code:'UC/WM_55/GRJ/TLD',name:'Godrej, Top-Load, AC Drain Motor',cat:'Washing Machine',threshold:21},
+  {id:102,skuid:'SKU102',code:'UC/RF_3/LG/DOD/T1',name:'LG, Double Door, AC Fan Motor',cat:'Refrigerator',threshold:21},
+  {id:103,skuid:'SKU103',code:'UC/WM_13/WHP/TLD/L2',name:'Whirlpool, Top load, Damper rod / Balancing Rods (4 Qty)',cat:'Washing Machine',threshold:21},
+  {id:104,skuid:'SKU104',code:'UC/WM_21/LG/TLD',name:'LG, Top-Load, DC Inlet Valve 1 way',cat:'Washing Machine',threshold:21},
+  {id:105,skuid:'SKU105',code:'UC/WM_62/SMG/TLD',name:'Samsung, Top-Load, Lint / Magic filter',cat:'Washing Machine',threshold:21},
+  {id:106,skuid:'SKU106',code:'UC/RF_60/WHP/DOD',name:'Whirlpool, Double Door, DC Fan Motor - Refrigerator',cat:'Refrigerator',threshold:21},
+  {id:107,skuid:'SKU107',code:'UC/RF_38/SMG/DOD',name:'Samsung, Double Door, Damper Thermostat',cat:'Refrigerator',threshold:21},
+  {id:108,skuid:'SKU108',code:'UC/WM_109/HIR/FLD',name:'Haier, Front-Load, Shocker Set - 2 pieces',cat:'Washing Machine',threshold:21},
+  {id:109,skuid:'SKU109',code:'UC/WM_18/HIR/TLD',name:'Haier, Top-Load, AC Inlet Valve 1 way',cat:'Washing Machine',threshold:21},
+  {id:110,skuid:'SKU110',code:'UC/WM_121/SMG/FLD',name:'Samsung, Front-Load, V Belt',cat:'Washing Machine',threshold:21},
+  {id:111,skuid:'SKU111',code:'UC/RF_83/LG/DOD',name:'LG, Double Door, Thermoste FR',cat:'Refrigerator',threshold:21},
+  {id:112,skuid:'SKU112',code:'UC/RF_4/WHP/DOD/Fan',name:'Whirlpool, Double Door, DC Fan Motor',cat:'Refrigerator',threshold:21},
+  {id:113,skuid:'SKU113',code:'UC/WM_297/SMG/TLD',name:'Samsung, Top load, AC Inlet Valve 2 Way',cat:'Washing Machine',threshold:21},
+  {id:114,skuid:'SKU114',code:'UC/WM_60/IFB/FLD',name:'IFB, Front-Load, V Belt',cat:'Washing Machine',threshold:21},
+  {id:115,skuid:'SKU115',code:'UC/RF_52/OTH/DOD',name:'Others, Double Door, AC Fan Motor',cat:'Refrigerator',threshold:21},
+  {id:116,skuid:'SKU116',code:'UC/WM_24/LG/TLD',name:'LG, Top-Load, Pulsator with snap small',cat:'Washing Machine',threshold:21},
+  {id:117,skuid:'SKU117',code:'UC/RF_11/WHP/SOD',name:'Whirlpool, Single Door, Relay',cat:'Refrigerator',threshold:21},
+  {id:118,skuid:'SKU118',code:'UC/RF_9/LG/DOD/T1',name:'LG, Double Door, Defrost Sensor',cat:'Refrigerator',threshold:21},
+  {id:119,skuid:'SKU119',code:'UC/RF_54/WHP/DOD',name:'Whirlpool, Double Door, Thermostat',cat:'Refrigerator',threshold:21},
+  {id:120,skuid:'SKU120',code:'UC/RF_27/GRJ/DOD',name:'Godrej, Double Door, AC Fan Motor',cat:'Refrigerator',threshold:21},
+  {id:121,skuid:'SKU121',code:'UC/WM_214/SMG/FLD',name:'Samsung, Front load, SAMSUNG USA DOOR LOCK',cat:'Washing Machine',threshold:21},
+  {id:122,skuid:'SKU122',code:'UC/WM_4/SMG/TLD',name:'Samsung, Top-Load, Pulsator with snap',cat:'Washing Machine',threshold:21},
+  {id:123,skuid:'SKU123',code:'UC/WM_31/LG/TLD',name:'LG, Top-Load, AC Inlet Valve 2 way',cat:'Washing Machine',threshold:21},
+  {id:124,skuid:'SKU124',code:'UC/WM_34/WHP/TLD',name:'Whirlpool, Top-Load, V Belt',cat:'Washing Machine',threshold:21},
+  {id:125,skuid:'SKU125',code:'UC/RF_43/SMG/DOD',name:'Samsung, Double Door, AC Fan Motor',cat:'Refrigerator',threshold:21},
+  {id:126,skuid:'SKU126',code:'UC/WM_23/BSC/FLD',name:'Bosch, Front-Load, AC Inlet Valve 2 way',cat:'Washing Machine',threshold:21},
+  {id:127,skuid:'SKU127',code:'UC/WM_82/WHP/TLD',name:'Whirlpool, Top-Load, AC Inlet Valve 2 way',cat:'Washing Machine',threshold:21},
+  {id:128,skuid:'SKU128',code:'UC/WM_74/GRJ/TLD',name:'Godrej, Top-Load, Damper rod / Balancing Rods (4 Qty)',cat:'Washing Machine',threshold:21},
+  {id:129,skuid:'SKU129',code:'UC/WM_79/WHP/SMI',name:'Whirlpool, Semi-Automatic, Spin tub bellow',cat:'Washing Machine',threshold:30},
+  {id:130,skuid:'SKU130',code:'UC/WM_47/SMG/TLD',name:'Samsung, Top-Load, Inner Drain Hose',cat:'Washing Machine',threshold:30},
+  {id:131,skuid:'SKU131',code:'UC/WM_51/LG/FLD',name:'LG, Front-Load, DC Inlet valve 3/4 way',cat:'Washing Machine',threshold:30},
+  {id:132,skuid:'SKU132',code:'UC/WM_73/WHP/SMI',name:'Whirlpool, Semi-Automatic, Spin Motor',cat:'Washing Machine',threshold:30},
+  {id:133,skuid:'SKU133',code:'UC/RF_22/SMG/DOD',name:'Samsung, Double Door, Defrost Timer',cat:'Refrigerator',threshold:30},
+  {id:134,skuid:'SKU134',code:'UC/WM_84/SMG/SMI',name:'Samsung, Semi-Automatic, Spin tub bellow',cat:'Washing Machine',threshold:30},
+  {id:135,skuid:'SKU135',code:'UC/WM_241/SMG/SMI',name:'Samsung, Semi Automatic, Drain bellow',cat:'Washing Machine',threshold:30},
+  {id:136,skuid:'SKU136',code:'UC/WM_57/BSC/TLD',name:'Bosch, Top-Load, Pulsator with snap big',cat:'Washing Machine',threshold:30},
+  {id:137,skuid:'SKU137',code:'UC/RF_21/GRJ/SOD',name:'Godrej, Single Door, Thermostat',cat:'Refrigerator',threshold:30},
+  {id:138,skuid:'SKU138',code:'UC/RF_24/SMG/SOD',name:'Samsung, Single Door, Cooling Coil with Capillary (Single DOOR）NORMAL',cat:'Refrigerator',threshold:30},
+  {id:139,skuid:'SKU139',code:'UC/RF_64/HIR/DOD',name:'Haier, Double Door, Sensor 2K',cat:'Refrigerator',threshold:30},
+  {id:140,skuid:'SKU140',code:'UC/RF_5/SMG/SOD',name:'Samsung, Single Door, Thermostat RHD',cat:'Refrigerator',threshold:30},
+  {id:141,skuid:'SKU141',code:'UC/WM_106/BSC/TLD',name:'Bosch, Top-Load, V Belt',cat:'Washing Machine',threshold:30},
+  {id:142,skuid:'SKU142',code:'UC/RF_41/GRJ/DOD',name:'Godrej, Double Door, Thermal Fuse and Bimetal both',cat:'Refrigerator',threshold:30},
+  {id:143,skuid:'SKU143',code:'UC/WM_224/BSC/FLD',name:'BOSCH, Front load, BOSCH DRAIN PUMP',cat:'Washing Machine',threshold:30},
+  {id:144,skuid:'SKU144',code:'UC/WM_204/LG/FLD',name:'LG, Front load, DR3 DOOR LOCK',cat:'Washing Machine',threshold:30},
+  {id:145,skuid:'SKU145',code:'UC/WM_264/GRJ/TLD',name:'GODREJ, Top load, Pressure Sensor',cat:'Washing Machine',threshold:30},
+  {id:146,skuid:'SKU146',code:'UC/RF_61/GRJ/DOD',name:'Godrej, Double Door, Thermostat',cat:'Refrigerator',threshold:30},
+  {id:147,skuid:'SKU147',code:'UC/RF_82/SMG/DOD',name:'Samsung, Double Door, Themostate RRT',cat:'Refrigerator',threshold:30},
+  {id:148,skuid:'SKU148',code:'UC/RF_9/LG/SOD',name:'LG, Single Door, Thermostat',cat:'Refrigerator',threshold:30},
+  {id:149,skuid:'SKU149',code:'UC/MW_17/SMG',name:'Samsung, , Turn Table Motor 30V',cat:'Microwave',threshold:30},
+  {id:150,skuid:'SKU150',code:'UC/WM_131/UNI/SMI',name:'Universal, Semi Automatic, ALL type Knob',cat:'Washing Machine',threshold:30},
+  {id:151,skuid:'SKU151',code:'UC/WM_118/OND/FLD',name:'Onida, Front-Load, AC Inlet Valve 2 way',cat:'Washing Machine',threshold:30},
+  {id:152,skuid:'SKU152',code:'UC/WM_61/LG/SMI',name:'LG, Semi-Automatic, Spin tub bellow',cat:'Washing Machine',threshold:30},
+  {id:153,skuid:'SKU153',code:'UC/RF_103/SMG/SOD',name:'Universal, Samsung, LED Bulb Original',cat:'Refrigerator',threshold:30},
+  {id:154,skuid:'SKU154',code:'UC/RF_16/UNI/HydroCarbon',name:'Universal, Universal, Gas Hydro Crabon',cat:'Refrigerator',threshold:30},
+  {id:155,skuid:'SKU155',code:'UC/RF_1/WHP/SOD/R600',name:'Whirlpool, single door, Thermostat Single Door',cat:'Refrigerator',threshold:30},
+  {id:156,skuid:'SKU156',code:'UC/MW_4/2M319K',name:'Universal, 2M319K, Magnetron (2M319K)',cat:'Microwave',threshold:30},
+  {id:157,skuid:'SKU157',code:'UC/RF_12/UNI/DOD/2PIN',name:'Universal, Double Door, Relay',cat:'Refrigerator',threshold:30},
+  {id:158,skuid:'SKU158',code:'UC/RF_16/UNI/R134A',name:'Universal, Universal, Gas 134A',cat:'Refrigerator',threshold:30},
+  {id:159,skuid:'SKU159',code:'UC/WM_7/WHP/TLD',name:'Whirlpool, Top-Load, Whirlpool - TSP (Complete Mechanism with hub) TSP',cat:'Washing Machine',threshold:30},
+  {id:160,skuid:'SKU160',code:'UC/WM_71/IFB/TLD',name:'IFB, Top-Load, AC Inlet Valve 2 way',cat:'Washing Machine',threshold:30},
+  {id:161,skuid:'SKU161',code:'UC/WM_67/WHP/TLD',name:'Whirlpool, Top-Load, Inner Drain Hose',cat:'Washing Machine',threshold:30},
+  {id:162,skuid:'SKU162',code:'UC/RF_4/HIR/DOD/Fan',name:'Haier, Double Door, DC Fan Motor',cat:'Refrigerator',threshold:30},
+  {id:163,skuid:'SKU163',code:'UC/RF_18/WHP/SOD/40',name:'Whirlpool, Double Door, Compressor 43',cat:'Refrigerator',threshold:30},
+  {id:164,skuid:'SKU164',code:'UC/WM_296/IFB/TLD',name:'IFB, Top load, AC Inlet Valve 3/4 Way',cat:'Washing Machine',threshold:30},
+  {id:165,skuid:'SKU165',code:'UC/RF_17/SMG/DOD',name:'Samsung, Double Door, Condensor coil 12 ros mix',cat:'Refrigerator',threshold:30},
+  {id:166,skuid:'SKU166',code:'UC/WM_221/BSC/FLD',name:'BOSCH, Front load, BOSCH NEW',cat:'Washing Machine',threshold:30},
+  {id:167,skuid:'SKU167',code:'UC/RF_4/LG/DOD/Fan',name:'LG, Double Door, DC Fan Motor',cat:'Refrigerator',threshold:30},
+  {id:168,skuid:'SKU168',code:'UC/RF_42/LG/DOD',name:'LG, Double Door, AC Fan Motor',cat:'Refrigerator',threshold:30},
+  {id:169,skuid:'SKU169',code:'UC/WM_153/IFB/FLD',name:'IFB, Front load, Pressure Sensor',cat:'Washing Machine',threshold:30},
+  {id:170,skuid:'SKU170',code:'UC/RF_8/LG/DOD/T1',name:'LG, Double Door, Defrost Timer',cat:'Refrigerator',threshold:30},
+  {id:171,skuid:'SKU171',code:'UC/WM_54/IFB/TLD',name:'IFB, Top-Load, AC Drain Motor',cat:'Washing Machine',threshold:30},
+  {id:172,skuid:'SKU172',code:'UC/WM_53/SMG/TLD',name:'Samsung, Top-Load, AC Inlet valve 3/4 way',cat:'Washing Machine',threshold:30},
+  {id:173,skuid:'SKU173',code:'UC/RF_3/WHP/DOD/T2',name:'Whirlpool, Double Door, AC Fan Motor',cat:'Refrigerator',threshold:30},
+  {id:174,skuid:'SKU174',code:'UC/RF_2/WHP/DOD/RF',name:'Whirlpool, Double Door, Thermostat Double Door',cat:'Refrigerator',threshold:30},
+  {id:175,skuid:'SKU175',code:'UC/WM_37/LG/TLD',name:'LG, Top-Load, Power Cord',cat:'Washing Machine',threshold:30},
+  {id:176,skuid:'SKU176',code:'UC/WM_43/SMG/TLD',name:'Samsung, Top-Load, Clutch assembly',cat:'Washing Machine',threshold:30},
+  {id:177,skuid:'SKU177',code:'UC/WM_35/GRJ/TLD',name:'Godrej, Top-Load, AC Inlet Valve 1 way',cat:'Washing Machine',threshold:30},
+  {id:178,skuid:'SKU178',code:'UC/RF_25/SMG/SOD',name:'Samsung, Single Door, Cooling Coil with Capillary (Single Door) INVERTER',cat:'Refrigerator',threshold:30},
+  {id:179,skuid:'SKU179',code:'UC/RF_12/WHP/DOD',name:'Whirlpool, Double Door, AC Fan Motor',cat:'Refrigerator',threshold:30},
+  {id:180,skuid:'SKU180',code:'UC/WM_39/SMG/TLD',name:'Samsung, Top-Load, Main Motor',cat:'Washing Machine',threshold:30},
+  {id:181,skuid:'SKU181',code:'UC/WM_298/IFB/TLD',name:'IFB, Top load, Pressure Sensor',cat:'Washing Machine',threshold:30},
+  {id:182,skuid:'SKU182',code:'UC/WM_145/WHP/FLD',name:'Whirlpool, Front load, Pressure Sensor',cat:'Washing Machine',threshold:30},
+  {id:183,skuid:'SKU183',code:'UC/RF_4/SMG/DOD/WhiteFan',name:'Samsung, Double Door, DC Fan Motor',cat:'Refrigerator',threshold:30},
+  {id:184,skuid:'SKU184',code:'UC/WM_129/LG/TLD',name:'LG, Top load, DC Drain motor',cat:'Washing Machine',threshold:30},
+  {id:185,skuid:'SKU185',code:'UC/WM_85/VDC/TLD',name:'Videocon, Top-Load, AC Inlet Valve 1 way',cat:'Washing Machine',threshold:30},
+  {id:186,skuid:'SKU186',code:'UC/WM_90/GRJ/SMI',name:'Godrej, Semi-Automatic, Spin tub bellow',cat:'Washing Machine',threshold:30},
+  {id:187,skuid:'SKU187',code:'UC/WM_28/LG/TLD',name:'LG, Top-Load, V Belt',cat:'Washing Machine',threshold:30},
+  {id:188,skuid:'SKU188',code:'UC/RF_18/WHP/DOD/90',name:'Whirlpool, Double Door, Compressor 90',cat:'Refrigerator',threshold:30},
+  {id:189,skuid:'SKU189',code:'UC/WM_44/LG/FLD',name:'LG, Front-Load, DC Inlet Valve 2 way',cat:'Washing Machine',threshold:30},
+  {id:190,skuid:'SKU190',code:'UC/WM_181/WHP/TLD',name:'Whirlpool, Top load, DV Case',cat:'Washing Machine',threshold:30},
+  {id:191,skuid:'SKU191',code:'UC/WM_13/WHP/TLD/L3',name:'Whirlpool, Top load, Damper rod / Balancing Rods (4 Qty)',cat:'Washing Machine',threshold:30},
+  {id:192,skuid:'SKU192',code:'UC/WM_58/WHP/TLD',name:'Whirlpool, Top-Load, Main Motor',cat:'Washing Machine',threshold:30},
+  {id:193,skuid:'SKU193',code:'UC/RF_15/SMG/DOD',name:'Samsung, Double Door, Condensor coil 8 ros mix',cat:'Refrigerator',threshold:30},
+  {id:194,skuid:'SKU194',code:'UC/WM_77/LG/SMI',name:'LG, Semi-Automatic, V Belt',cat:'Washing Machine',threshold:30},
+  {id:195,skuid:'SKU195',code:'UC/RF_44/GRJ/DOD',name:'Godrej, Double Door, DC Fan Motor - Freezer',cat:'Refrigerator',threshold:30},
+  {id:196,skuid:'SKU196',code:'UC/WM_215/IFB/FLD',name:'IFB, Front load, IFB RED DOOR LOCK',cat:'Washing Machine',threshold:30},
+  {id:197,skuid:'SKU197',code:'UC/WM_208/BSC/FLD',name:'BOSCH, Front load, BOSCH/ LOYD DOOR LOCK',cat:'Washing Machine',threshold:30},
+  {id:198,skuid:'SKU198',code:'UC/RF_9/SMG/DOD/T3',name:'Samsung, Double Door, Defrost Sensor',cat:'Refrigerator',threshold:30},
+  {id:199,skuid:'SKU199',code:'UC/WM_164/SMN/FLD',name:'Siemens, Front load, Door lock',cat:'Washing Machine',threshold:30},
+  {id:200,skuid:'SKU200',code:'UC/WM_149/HIR/TLD',name:'Haier, Top load, Pressure Sensor',cat:'Washing Machine',threshold:30},
+  {id:201,skuid:'SKU201',code:'UC/WM_117/SMG/SMI',name:'Samsung, Semi-Automatic, Gear Box (With Pulley)',cat:'Washing Machine',threshold:30},
+  {id:202,skuid:'SKU202',code:'UC/RF_8/LG/DOD/T2',name:'LG, Double Door, Defrost Timer',cat:'Refrigerator',threshold:30},
+  {id:203,skuid:'SKU203',code:'UC/WM_230/SMG/FLD',name:'SAMSUNG, Front load, SAM 5.5 GASKIT',cat:'Washing Machine',threshold:30},
+  {id:204,skuid:'SKU204',code:'UC/RF_4/SMG/DOD/3Wire',name:'Samsung, Double Door, DC Fan Motor',cat:'Refrigerator',threshold:30},
+  {id:205,skuid:'SKU205',code:'UC/WM_301/LG/SMI',name:'LG, Semi Automatic, Spin Timer',cat:'Washing Machine',threshold:30},
+  {id:206,skuid:'SKU206',code:'UC/WM_36/IFB/TLD',name:'IFB, Top-Load, Damper rod / Balancing Rods (4 Qty)',cat:'Washing Machine',threshold:30},
+  {id:207,skuid:'SKU207',code:'UC/RF_4/LG/DOD/4Wire',name:'LG, Double Door, DC Fan Motor',cat:'Refrigerator',threshold:30},
+  {id:208,skuid:'SKU208',code:'UC/RF_4/LG/DOD/3Wireshort',name:'LG, Double Door, DC Fan Motor',cat:'Refrigerator',threshold:30},
+  {id:209,skuid:'SKU209',code:'UC/WM_255/IFB/FLD',name:'IFB, Front load, V Belt',cat:'Washing Machine',threshold:30},
+  {id:210,skuid:'SKU210',code:'UC/WM_244/GRJ/SMI',name:'GODREJ, Semi Automatic, Drain bellow',cat:'Washing Machine',threshold:30},
+  {id:211,skuid:'SKU211',code:'UC/RF_5/SMG/DOD/T2',name:'Samsung, Double Door, Thermal Fuse With Bimetal',cat:'Refrigerator',threshold:30},
+  {id:212,skuid:'SKU212',code:'UC/RF_53/HIR/DOD',name:'Haier, Double Door, Bimetal',cat:'Refrigerator',threshold:30},
+  {id:213,skuid:'SKU213',code:'UC/MW_14/2M319H',name:'Universal, 2M319H, Magnetron (2M319H)',cat:'Microwave',threshold:30},
+  {id:214,skuid:'SKU214',code:'UC/WM_86/LG/FLD',name:'LG, Front-Load, AC Inlet valve 3/4 way',cat:'Washing Machine',threshold:30},
+  {id:215,skuid:'SKU215',code:'UC/RF_12/SMG/DOD/Combo',name:'Samsung, Double Door, Relay',cat:'Refrigerator',threshold:30},
+  {id:216,skuid:'SKU216',code:'UC/MW_9/LG',name:'LG, , Fan Motor 2 pin',cat:'Microwave',threshold:30},
+  {id:217,skuid:'SKU217',code:'UC/WM_303/UNI/SMI',name:'Universal, Semi Automatic, Wash Timer ( Electromechanical )',cat:'Washing Machine',threshold:30},
+  {id:218,skuid:'SKU218',code:'UC/RF_13/WHP/DOD',name:'Whirlpool, Double Door, Defrost Timer T1',cat:'Refrigerator',threshold:30},
+  {id:219,skuid:'SKU219',code:'UC/RF_46/SMG/DOD',name:'Samsung, Double Door, DC Fan Motor - Refrigerator',cat:'Refrigerator',threshold:30},
+  {id:220,skuid:'SKU220',code:'UC/RF_26/LG/DOD',name:'LG, Double Door, DC Fan Motor - Freezer',cat:'Refrigerator',threshold:30},
+  {id:221,skuid:'SKU221',code:'UC/RF_4/PNC/DOD/Fan',name:'panasonic, Double Door, DC Fan Motor',cat:'Refrigerator',threshold:30},
+  {id:222,skuid:'SKU222',code:'UC/WM_234/WHP/HEXA',name:'Whirlpool, Top load, Pulsator With Cap',cat:'Washing Machine',threshold:30},
+  {id:223,skuid:'SKU223',code:'UC/WM_252/HIR/FLD',name:'Haier, Front load, V Belt',cat:'Washing Machine',threshold:30},
+  {id:224,skuid:'SKU224',code:'UC/WM_220/LG/FLD',name:'LG, Front load, LG TWIN DRAIN PUMP',cat:'Washing Machine',threshold:30},
+  {id:225,skuid:'SKU225',code:'UC/WM_216/SMG/FLD',name:'SAMSUNG, Front load, SAM NEW DRAIN PUMP',cat:'Washing Machine',threshold:30},
+  {id:226,skuid:'SKU226',code:'UC/WM_222/LG/FLD',name:'LG, Front load, LG BIG DRAIN PUMP',cat:'Washing Machine',threshold:30},
+  {id:227,skuid:'SKU227',code:'UC/RF_69/SMG/SBS',name:'Samsung, Side by side, DC Fan motor',cat:'Refrigerator',threshold:30},
+  {id:228,skuid:'SKU228',code:'UC/WM_102/SMG/SMI',name:'Samsung, Semi-Automatic, V Belt',cat:'Washing Machine',threshold:30},
+  {id:229,skuid:'SKU229',code:'UC/WM_159/LG/TLD',name:'LG, Top load, Door lock',cat:'Washing Machine',threshold:30},
+  {id:230,skuid:'SKU230',code:'UC/WM_209/LG/FLD',name:'LG, Front load, DR 1 DOOR LOCK',cat:'Washing Machine',threshold:30},
+  {id:231,skuid:'SKU231',code:'UC/WM_211/GRJ/FLD',name:'GODREJ, Front load, GODREJ DOOR LOCK',cat:'Washing Machine',threshold:30},
+  {id:232,skuid:'SKU232',code:'UC/WM_122/HIR/SMI',name:'Haier, Semi-Automatic, Wash Timer 35 min',cat:'Washing Machine',threshold:30},
+  {id:233,skuid:'SKU233',code:'UC/WM_120/WHP/SMI',name:'Whirlpool, Semi-Automatic, Wash Timer 15 min',cat:'Washing Machine',threshold:30},
+  {id:234,skuid:'SKU234',code:'UC/WM_92/LG/TLD',name:'LG, Top-Load, Inner Drain Hose',cat:'Washing Machine',threshold:30},
+  {id:235,skuid:'SKU235',code:'UC/WM_275/LG/TLD',name:'LG, Top load, DC Inlet Valve 2 way',cat:'Washing Machine',threshold:30},
+  {id:236,skuid:'SKU236',code:'UC/WM_292/PNC/TLD',name:'panasonic, Top load, Drain Motor',cat:'Washing Machine',threshold:30},
+  {id:237,skuid:'SKU237',code:'UC/WM_274/LG/FLD',name:'LG, Front load, DC Inlet Valve 2 way',cat:'Washing Machine',threshold:30},
+  {id:238,skuid:'SKU238',code:'UC/RF_34/GRJ/DOD',name:'Godrej, Double Door, Defrost Timer',cat:'Refrigerator',threshold:30},
+  {id:239,skuid:'SKU239',code:'UC/RF_3/GRJ/DOD/T1',name:'GODREJ, Double Door, AC Fan Motor',cat:'Refrigerator',threshold:30},
+  {id:240,skuid:'SKU240',code:'UC/RF_3/PNC/DOD/T1',name:'panasonic, Double Door, AC Fan Motor',cat:'Refrigerator',threshold:30},
+  {id:241,skuid:'SKU241',code:'UC/RF_3/SMG/DOD/T2',name:'Samsung, Double Door, AC Fan Motor',cat:'Refrigerator',threshold:30},
+  {id:242,skuid:'SKU242',code:'UC/RF_39/WHP/SOD',name:'Whirlpool, Single Door, Cooling Coil with Capillary (Single Door)',cat:'Refrigerator',threshold:30},
+  {id:243,skuid:'SKU243',code:'UC/RF_55/LG/DOD',name:'LG, Double Door, DC Fan Motor - Refrigerator',cat:'Refrigerator',threshold:30},
+  {id:244,skuid:'SKU244',code:'UC/WM_25/LG/TLD',name:'LG, Top-Load, Pulsator with snap big',cat:'Washing Machine',threshold:30},
+  {id:245,skuid:'SKU245',code:'UC/WM_243/WHP/SMI',name:'Whirlpool, Semi Automatic, Drain bellow',cat:'Washing Machine',threshold:30},
+  {id:246,skuid:'SKU246',code:'UC/WM_27/LG/TLD',name:'LG, Top-Load, Clutch assembly 6kg inverter',cat:'Washing Machine',threshold:30},
+  {id:247,skuid:'SKU247',code:'UC/RF_47/HIR/DOD',name:'Haier, Double Door, DC Fan Motor - Freezer',cat:'Refrigerator',threshold:30},
+  {id:248,skuid:'SKU248',code:'UC/WM_69/BSC/TLD',name:'Bosch, Top-Load, AC Inlet Valve 2 way',cat:'Washing Machine',threshold:30},
+  {id:249,skuid:'SKU249',code:'UC/RF_12/UNI/DOD/4PIN',name:'Universal, Double Door, OLP Set of 10',cat:'Refrigerator',threshold:30},
+  {id:250,skuid:'SKU250',code:'UC/RF_16/UNI/R290',name:'Universal, Universal, Gas R290',cat:'Refrigerator',threshold:30},
+  {id:251,skuid:'SKU251',code:'UC/WM_132/SMG/TLD',name:'Samsung, Top load, Pulsator',cat:'Washing Machine',threshold:30},
+  {id:252,skuid:'SKU252',code:'UC/WM_128/SMG/TLD',name:'Samsung, Top load, Shocker TL Inv',cat:'Washing Machine',threshold:30},
+  {id:253,skuid:'SKU253',code:'UC/WM_141/SMG/FLD',name:'Samsung, Front load, Pressure Sensor',cat:'Washing Machine',threshold:30},
+  {id:254,skuid:'SKU254',code:'UC/WM_123/OND/TLD',name:'Onida, Top-Load, Damper rod / Balancing Rods (4 Qty)',cat:'Washing Machine',threshold:30},
+  {id:255,skuid:'SKU255',code:'UC/WM_87/BSC/TLD',name:'Bosch, Top-Load, Damper rod / Balancing Rods (4 Qty)',cat:'Washing Machine',threshold:30},
+  {id:256,skuid:'SKU256',code:'UC/WM_78/LG/TLD',name:'LG, Top-Load, AC Inlet valve 3/4 way',cat:'Washing Machine',threshold:30},
+  {id:257,skuid:'SKU257',code:'UC/WM_95/HIR/FLD',name:'Haier, Front-Load, AC Inlet Valve 2 way',cat:'Washing Machine',threshold:30},
+  {id:258,skuid:'SKU258',code:'UC/WM_96/LG/SMI/OLD',name:'LG, Semi-Automatic, Gear Box With Pulley',cat:'Washing Machine',threshold:30},
+  {id:259,skuid:'SKU259',code:'UC/RF_81/SMG/DOD',name:'Samsung, Double Door, Themostate FRT',cat:'Refrigerator',threshold:30},
+  {id:260,skuid:'SKU260',code:'UC/RF_8/SMG/DOD/T1',name:'Samsung, Double Door, Defrost Timer',cat:'Refrigerator',threshold:30},
+  {id:261,skuid:'SKU261',code:'UC/RF_9/LG/DOD/T3',name:'LG, Double Door, Defrost Sensor',cat:'Refrigerator',threshold:30},
+  {id:262,skuid:'SKU262',code:'UC/WM_148/HIR/FLD',name:'Haier, Front load, Pressure Sensor',cat:'Washing Machine',threshold:30},
+  {id:263,skuid:'SKU263',code:'UC/WM_110/HIR/TLD',name:'Haier, Top-Load, Damper rod / Balancing Rods (4 Qty)',cat:'Washing Machine',threshold:30},
+  {id:264,skuid:'SKU264',code:'UC/WM_111/LG/FLD',name:'LG, Front-Load, V Belt',cat:'Washing Machine',threshold:30},
+  {id:265,skuid:'SKU265',code:'UC/WM_217/LG/FLD',name:'LG, Front load, LG DRAIN PUMP',cat:'Washing Machine',threshold:30},
+  {id:266,skuid:'SKU266',code:'UC/RF_87/LG/FLD',name:'LG, Front load, Pressure Sensor',cat:'Refrigerator',threshold:30},
+  {id:267,skuid:'SKU267',code:'UC/RF_45/LG/SOD',name:'LG, Single Door, Cooling Coil with Capillary (Single Door)',cat:'Refrigerator',threshold:30},
+  {id:268,skuid:'SKU268',code:'UC/RF_4/SMG/DOD/4Wire',name:'Samsung, Double Door, DC Fan Motor',cat:'Refrigerator',threshold:30},
+  {id:269,skuid:'SKU269',code:'UC/RF_4/SMG/DOD/Black',name:'Samsung, Double Door, DC Fan Motor',cat:'Refrigerator',threshold:30},
+  {id:270,skuid:'SKU270',code:'UC/RF_4/SMG/DOD/White',name:'Samsung, Double Door, DC Fan Motor',cat:'Refrigerator',threshold:30},
+  {id:271,skuid:'SKU271',code:'UC/WM_223/LG/FLD',name:'LG, Front load, LG DC DRAIN PUMP',cat:'Washing Machine',threshold:30},
+  {id:272,skuid:'SKU272',code:'UC/WM_232/LG/FLD',name:'LG, Front load, LG 516 GASKIT',cat:'Washing Machine',threshold:30},
+  {id:273,skuid:'SKU273',code:'UC/WM_205/SMG/FLD',name:'Samsung, Front load, SAMSUNG INVERTER DOOR LOCK',cat:'Washing Machine',threshold:30},
+  {id:274,skuid:'SKU274',code:'UC/WM_107/GRJ/SMI',name:'Godrej, Semi-Automatic, Wash Timer 35 min',cat:'Washing Machine',threshold:30},
+  {id:275,skuid:'SKU275',code:'UC/WM_188/UNI/FLD',name:'Water Filter',cat:'Washing Machine',threshold:30},
+  {id:276,skuid:'SKU276',code:'UC/WM_116/SMN/TLD',name:'Siemens, Top-Load, Inner Drain Hose',cat:'Washing Machine',threshold:30},
+  {id:277,skuid:'SKU277',code:'UC/WM_115/BSC/TLD',name:'Bosch, Top-Load, Clutch assembly',cat:'Washing Machine',threshold:30},
+  {id:278,skuid:'SKU278',code:'UC/WM_114/SMG/SMI',name:'Samsung, Semi-Automatic, Wash Timer',cat:'Washing Machine',threshold:30},
+  {id:279,skuid:'SKU279',code:'UC/RF_65/GRJ/DOD',name:'Godrej, Double Door, DC Fan Motor - Condenser',cat:'Refrigerator',threshold:30},
+  {id:280,skuid:'SKU280',code:'UC/RF_62/SMG/DOD',name:'Samsung, Double Door, DC Fan Motor - Condenser',cat:'Refrigerator',threshold:30},
+  {id:281,skuid:'SKU281',code:'UC/RF_6/GRJ/DOD/T1',name:'GODREJ, Double Door, Bimetal',cat:'Refrigerator',threshold:30},
+  {id:282,skuid:'SKU282',code:'UC/RF_68/LG/SBS',name:'LG, Side by side, DC Fan motor Condenser',cat:'Refrigerator',threshold:30},
+  {id:283,skuid:'SKU283',code:'UC/RF_18/WHP/DOD/66',name:'Whirlpool, Double Door, Compressor 66',cat:'Refrigerator',threshold:30},
+  {id:284,skuid:'SKU284',code:'UC/WM_257/SMG/SMI',name:'s, Semi Automatic, Coupler',cat:'Washing Machine',threshold:30},
+  {id:285,skuid:'SKU285',code:'UC/WM_269/SMG/TLD',name:'Samsung, Top load, DC Inlet Valve 1 way',cat:'Washing Machine',threshold:30},
+  {id:286,skuid:'SKU286',code:'UC/WM_270/SMG/FLD',name:'Samsung, Front load, DC Inlet Valve 2 way',cat:'Washing Machine',threshold:30},
+  {id:287,skuid:'SKU287',code:'UC/WM_239/VDC/SMI',name:'Videocon, Semi Automatic, Gear Box (With Pulley)',cat:'Washing Machine',threshold:30},
+  {id:288,skuid:'SKU288',code:'UC/WM_238/VDC/SMI',name:'Wash Motor',cat:'Washing Machine',threshold:30},
+  {id:289,skuid:'SKU289',code:'UC/WM_238/VDC/SMI',name:'Videocon, Semi Automatic, Wash Motor',cat:'Washing Machine',threshold:30},
+  {id:290,skuid:'SKU290',code:'UC/WM_248/LG/FLD',name:'LG, Front load, Door handle',cat:'Washing Machine',threshold:30},
+  {id:291,skuid:'SKU291',code:'UC/RF_35/LG/DOD',name:'LG, Double Door, Defrost Timer T2',cat:'Refrigerator',threshold:30},
+  {id:292,skuid:'SKU292',code:'UC/RF_4/GRJ/DOD/T1',name:'GODREJ, Double Door, DC Fan Motor',cat:'Refrigerator',threshold:30},
+  {id:293,skuid:'SKU293',code:'UC/RF_3/WHP/DOD/T1',name:'Whirlpool, Double Door, AC Fan Motor',cat:'Refrigerator',threshold:30},
+  {id:294,skuid:'SKU294',code:'UC/WM_40/LG/TLD',name:'LG, Top-Load, Capacitor',cat:'Washing Machine',threshold:30},
+  {id:295,skuid:'SKU295',code:'UC/WM_41/OND/TLD',name:'Onida, Top-Load, AC Inlet Valve 1 way',cat:'Washing Machine',threshold:30},
+  {id:296,skuid:'SKU296',code:'UC/WM_48/BSC/TLD',name:'Bosch, Top-Load, AC Inlet Valve 1 way',cat:'Washing Machine',threshold:30},
+  {id:297,skuid:'SKU297',code:'UC/WM_52/HIR/TLD',name:'Haier, Top-Load, AC Drain Motor',cat:'Washing Machine',threshold:30},
+  {id:298,skuid:'SKU298',code:'UC/WM_59/GRJ/TLD',name:'Godrej, Top-Load, V Belt',cat:'Washing Machine',threshold:30}
+];
+let inventory={
+  1:{WH:122,DS1:29,DS2:29,DS3:29},
+  2:{WH:117,DS1:27,DS2:27,DS3:27},
+  3:{WH:115,DS1:27,DS2:27,DS3:27},
+  4:{WH:113,DS1:26,DS2:26,DS3:26},
+  5:{WH:98,DS1:23,DS2:23,DS3:23},
+  6:{WH:89,DS1:21,DS2:21,DS3:21},
+  7:{WH:88,DS1:20,DS2:20,DS3:20},
+  8:{WH:79,DS1:18,DS2:18,DS3:18},
+  9:{WH:78,DS1:18,DS2:18,DS3:18},
+  10:{WH:76,DS1:18,DS2:18,DS3:18},
+  11:{WH:64,DS1:15,DS2:15,DS3:15},
+  12:{WH:63,DS1:15,DS2:15,DS3:15},
+  13:{WH:60,DS1:14,DS2:14,DS3:14},
+  14:{WH:55,DS1:13,DS2:13,DS3:13},
+  15:{WH:47,DS1:11,DS2:11,DS3:11},
+  16:{WH:46,DS1:11,DS2:11,DS3:11},
+  17:{WH:44,DS1:10,DS2:10,DS3:10},
+  18:{WH:40,DS1:9,DS2:9,DS3:9},
+  19:{WH:37,DS1:9,DS2:9,DS3:9},
+  20:{WH:35,DS1:8,DS2:8,DS3:8},
+  21:{WH:35,DS1:8,DS2:8,DS3:8},
+  22:{WH:34,DS1:8,DS2:8,DS3:8},
+  23:{WH:31,DS1:7,DS2:7,DS3:7},
+  24:{WH:27,DS1:6,DS2:6,DS3:6},
+  25:{WH:26,DS1:6,DS2:6,DS3:6},
+  26:{WH:26,DS1:6,DS2:6,DS3:6},
+  27:{WH:25,DS1:6,DS2:6,DS3:6},
+  28:{WH:22,DS1:5,DS2:5,DS3:5},
+  29:{WH:22,DS1:5,DS2:5,DS3:5},
+  30:{WH:21,DS1:5,DS2:5,DS3:5},
+  31:{WH:20,DS1:5,DS2:5,DS3:5},
+  32:{WH:20,DS1:5,DS2:5,DS3:5},
+  33:{WH:19,DS1:5,DS2:5,DS3:5},
+  34:{WH:19,DS1:4,DS2:4,DS3:4},
+  35:{WH:19,DS1:4,DS2:4,DS3:4},
+  36:{WH:18,DS1:4,DS2:4,DS3:4},
+  37:{WH:15,DS1:4,DS2:4,DS3:4},
+  38:{WH:15,DS1:4,DS2:4,DS3:4},
+  39:{WH:15,DS1:3,DS2:3,DS3:3},
+  40:{WH:15,DS1:3,DS2:3,DS3:3},
+  41:{WH:14,DS1:3,DS2:3,DS3:3},
+  42:{WH:14,DS1:3,DS2:3,DS3:3},
+  43:{WH:13,DS1:3,DS2:3,DS3:3},
+  44:{WH:13,DS1:3,DS2:3,DS3:3},
+  45:{WH:12,DS1:3,DS2:3,DS3:3},
+  46:{WH:12,DS1:3,DS2:3,DS3:3},
+  47:{WH:12,DS1:3,DS2:3,DS3:3},
+  48:{WH:12,DS1:3,DS2:3,DS3:3},
+  49:{WH:12,DS1:3,DS2:3,DS3:3},
+  50:{WH:12,DS1:3,DS2:3,DS3:3},
+  51:{WH:12,DS1:3,DS2:3,DS3:3},
+  52:{WH:11,DS1:3,DS2:3,DS3:3},
+  53:{WH:11,DS1:3,DS2:3,DS3:3},
+  54:{WH:11,DS1:3,DS2:3,DS3:3},
+  55:{WH:11,DS1:3,DS2:3,DS3:3},
+  56:{WH:11,DS1:3,DS2:3,DS3:3},
+  57:{WH:11,DS1:3,DS2:3,DS3:3},
+  58:{WH:10,DS1:2,DS2:2,DS3:2},
+  59:{WH:10,DS1:2,DS2:2,DS3:2},
+  60:{WH:10,DS1:2,DS2:2,DS3:2},
+  61:{WH:10,DS1:2,DS2:2,DS3:2},
+  62:{WH:10,DS1:2,DS2:2,DS3:2},
+  63:{WH:10,DS1:2,DS2:2,DS3:2},
+  64:{WH:10,DS1:2,DS2:2,DS3:2},
+  65:{WH:9,DS1:2,DS2:2,DS3:2},
+  66:{WH:8,DS1:2,DS2:2,DS3:2},
+  67:{WH:8,DS1:2,DS2:2,DS3:2},
+  68:{WH:8,DS1:2,DS2:2,DS3:2},
+  69:{WH:8,DS1:2,DS2:2,DS3:2},
+  70:{WH:8,DS1:2,DS2:2,DS3:2},
+  71:{WH:8,DS1:2,DS2:2,DS3:2},
+  72:{WH:8,DS1:2,DS2:2,DS3:2},
+  73:{WH:8,DS1:2,DS2:2,DS3:2},
+  74:{WH:8,DS1:2,DS2:2,DS3:2},
+  75:{WH:8,DS1:2,DS2:2,DS3:2},
+  76:{WH:8,DS1:2,DS2:2,DS3:2},
+  77:{WH:8,DS1:2,DS2:2,DS3:2},
+  78:{WH:8,DS1:2,DS2:2,DS3:2},
+  79:{WH:7,DS1:2,DS2:2,DS3:2},
+  80:{WH:7,DS1:2,DS2:2,DS3:2},
+  81:{WH:7,DS1:2,DS2:2,DS3:2},
+  82:{WH:7,DS1:2,DS2:2,DS3:2},
+  83:{WH:7,DS1:2,DS2:2,DS3:2},
+  84:{WH:7,DS1:2,DS2:2,DS3:2},
+  85:{WH:6,DS1:1,DS2:1,DS3:1},
+  86:{WH:6,DS1:1,DS2:1,DS3:1},
+  87:{WH:6,DS1:1,DS2:1,DS3:1},
+  88:{WH:6,DS1:1,DS2:1,DS3:1},
+  89:{WH:5,DS1:1,DS2:1,DS3:1},
+  90:{WH:5,DS1:1,DS2:1,DS3:1},
+  91:{WH:5,DS1:1,DS2:1,DS3:1},
+  92:{WH:5,DS1:1,DS2:1,DS3:1},
+  93:{WH:5,DS1:1,DS2:1,DS3:1},
+  94:{WH:5,DS1:1,DS2:1,DS3:1},
+  95:{WH:4,DS1:1,DS2:1,DS3:1},
+  96:{WH:4,DS1:1,DS2:1,DS3:1},
+  97:{WH:4,DS1:1,DS2:1,DS3:1},
+  98:{WH:4,DS1:1,DS2:1,DS3:1},
+  99:{WH:4,DS1:1,DS2:1,DS3:1},
+  100:{WH:4,DS1:1,DS2:1,DS3:1},
+  101:{WH:4,DS1:1,DS2:1,DS3:1},
+  102:{WH:4,DS1:1,DS2:1,DS3:1},
+  103:{WH:4,DS1:1,DS2:1,DS3:1},
+  104:{WH:4,DS1:1,DS2:1,DS3:1},
+  105:{WH:4,DS1:1,DS2:1,DS3:1},
+  106:{WH:4,DS1:1,DS2:1,DS3:1},
+  107:{WH:4,DS1:1,DS2:1,DS3:1},
+  108:{WH:4,DS1:1,DS2:1,DS3:1},
+  109:{WH:4,DS1:1,DS2:1,DS3:1},
+  110:{WH:4,DS1:1,DS2:1,DS3:1},
+  111:{WH:4,DS1:1,DS2:1,DS3:1},
+  112:{WH:4,DS1:1,DS2:1,DS3:1},
+  113:{WH:4,DS1:1,DS2:1,DS3:1},
+  114:{WH:4,DS1:1,DS2:1,DS3:1},
+  115:{WH:4,DS1:1,DS2:1,DS3:1},
+  116:{WH:4,DS1:1,DS2:1,DS3:1},
+  117:{WH:4,DS1:1,DS2:1,DS3:1},
+  118:{WH:4,DS1:1,DS2:1,DS3:1},
+  119:{WH:4,DS1:1,DS2:1,DS3:1},
+  120:{WH:4,DS1:1,DS2:1,DS3:1},
+  121:{WH:4,DS1:1,DS2:1,DS3:1},
+  122:{WH:4,DS1:1,DS2:1,DS3:1},
+  123:{WH:3,DS1:1,DS2:1,DS3:1},
+  124:{WH:3,DS1:1,DS2:1,DS3:1},
+  125:{WH:3,DS1:1,DS2:1,DS3:1},
+  126:{WH:3,DS1:1,DS2:1,DS3:1},
+  127:{WH:3,DS1:1,DS2:1,DS3:1},
+  128:{WH:3,DS1:1,DS2:1,DS3:1},
+  129:{WH:3,DS1:1,DS2:1,DS3:1},
+  130:{WH:3,DS1:1,DS2:1,DS3:1},
+  131:{WH:3,DS1:1,DS2:1,DS3:1},
+  132:{WH:3,DS1:1,DS2:1,DS3:1},
+  133:{WH:3,DS1:1,DS2:1,DS3:1},
+  134:{WH:3,DS1:1,DS2:1,DS3:1},
+  135:{WH:3,DS1:1,DS2:1,DS3:1},
+  136:{WH:2,DS1:1,DS2:1,DS3:1},
+  137:{WH:2,DS1:1,DS2:1,DS3:1},
+  138:{WH:2,DS1:1,DS2:1,DS3:1},
+  139:{WH:2,DS1:1,DS2:1,DS3:1},
+  140:{WH:2,DS1:1,DS2:1,DS3:1},
+  141:{WH:2,DS1:1,DS2:1,DS3:1},
+  142:{WH:2,DS1:1,DS2:1,DS3:1},
+  143:{WH:2,DS1:1,DS2:1,DS3:1},
+  144:{WH:2,DS1:1,DS2:1,DS3:1},
+  145:{WH:2,DS1:1,DS2:1,DS3:1},
+  146:{WH:2,DS1:1,DS2:1,DS3:1},
+  147:{WH:2,DS1:1,DS2:1,DS3:1},
+  148:{WH:2,DS1:1,DS2:1,DS3:1},
+  149:{WH:2,DS1:1,DS2:1,DS3:1},
+  150:{WH:2,DS1:1,DS2:1,DS3:1},
+  151:{WH:2,DS1:1,DS2:1,DS3:1},
+  152:{WH:2,DS1:1,DS2:1,DS3:1},
+  153:{WH:2,DS1:1,DS2:1,DS3:1},
+  154:{WH:2,DS1:1,DS2:1,DS3:1},
+  155:{WH:2,DS1:1,DS2:1,DS3:1},
+  156:{WH:2,DS1:1,DS2:1,DS3:1},
+  157:{WH:2,DS1:1,DS2:1,DS3:1},
+  158:{WH:2,DS1:1,DS2:1,DS3:1},
+  159:{WH:2,DS1:1,DS2:1,DS3:1},
+  160:{WH:2,DS1:1,DS2:1,DS3:1},
+  161:{WH:2,DS1:1,DS2:1,DS3:1},
+  162:{WH:2,DS1:1,DS2:1,DS3:1},
+  163:{WH:2,DS1:1,DS2:1,DS3:1},
+  164:{WH:2,DS1:1,DS2:1,DS3:1},
+  165:{WH:2,DS1:1,DS2:1,DS3:1},
+  166:{WH:2,DS1:1,DS2:1,DS3:1},
+  167:{WH:2,DS1:1,DS2:1,DS3:1},
+  168:{WH:2,DS1:1,DS2:1,DS3:1},
+  169:{WH:2,DS1:1,DS2:1,DS3:1},
+  170:{WH:2,DS1:1,DS2:1,DS3:1},
+  171:{WH:2,DS1:1,DS2:1,DS3:1},
+  172:{WH:2,DS1:1,DS2:1,DS3:1},
+  173:{WH:2,DS1:1,DS2:1,DS3:1},
+  174:{WH:2,DS1:1,DS2:1,DS3:1},
+  175:{WH:2,DS1:1,DS2:1,DS3:1},
+  176:{WH:2,DS1:1,DS2:1,DS3:1},
+  177:{WH:2,DS1:1,DS2:1,DS3:1},
+  178:{WH:2,DS1:1,DS2:1,DS3:1},
+  179:{WH:2,DS1:1,DS2:1,DS3:1},
+  180:{WH:2,DS1:1,DS2:1,DS3:1},
+  181:{WH:2,DS1:1,DS2:1,DS3:1},
+  182:{WH:2,DS1:1,DS2:1,DS3:1},
+  183:{WH:2,DS1:1,DS2:1,DS3:1},
+  184:{WH:2,DS1:1,DS2:1,DS3:1},
+  185:{WH:2,DS1:1,DS2:1,DS3:1},
+  186:{WH:2,DS1:1,DS2:1,DS3:1},
+  187:{WH:2,DS1:1,DS2:1,DS3:1},
+  188:{WH:2,DS1:1,DS2:1,DS3:1},
+  189:{WH:2,DS1:1,DS2:1,DS3:1},
+  190:{WH:1,DS1:1,DS2:1,DS3:1},
+  191:{WH:1,DS1:1,DS2:1,DS3:1},
+  192:{WH:1,DS1:1,DS2:1,DS3:1},
+  193:{WH:1,DS1:1,DS2:1,DS3:1},
+  194:{WH:1,DS1:1,DS2:1,DS3:1},
+  195:{WH:1,DS1:1,DS2:1,DS3:1},
+  196:{WH:1,DS1:1,DS2:1,DS3:1},
+  197:{WH:1,DS1:1,DS2:1,DS3:1},
+  198:{WH:1,DS1:1,DS2:1,DS3:1},
+  199:{WH:1,DS1:1,DS2:1,DS3:1},
+  200:{WH:1,DS1:1,DS2:1,DS3:1},
+  201:{WH:1,DS1:1,DS2:1,DS3:1},
+  202:{WH:1,DS1:1,DS2:1,DS3:1},
+  203:{WH:1,DS1:1,DS2:1,DS3:1},
+  204:{WH:1,DS1:1,DS2:1,DS3:1},
+  205:{WH:1,DS1:1,DS2:1,DS3:1},
+  206:{WH:1,DS1:1,DS2:1,DS3:1},
+  207:{WH:1,DS1:1,DS2:1,DS3:1},
+  208:{WH:1,DS1:1,DS2:1,DS3:1},
+  209:{WH:1,DS1:1,DS2:1,DS3:1},
+  210:{WH:1,DS1:1,DS2:1,DS3:1},
+  211:{WH:1,DS1:1,DS2:1,DS3:1},
+  212:{WH:1,DS1:1,DS2:1,DS3:1},
+  213:{WH:1,DS1:1,DS2:1,DS3:1},
+  214:{WH:1,DS1:1,DS2:1,DS3:1},
+  215:{WH:1,DS1:1,DS2:1,DS3:1},
+  216:{WH:1,DS1:1,DS2:1,DS3:1},
+  217:{WH:1,DS1:1,DS2:1,DS3:1},
+  218:{WH:1,DS1:1,DS2:1,DS3:1},
+  219:{WH:1,DS1:1,DS2:1,DS3:1},
+  220:{WH:1,DS1:1,DS2:1,DS3:1},
+  221:{WH:1,DS1:1,DS2:1,DS3:1},
+  222:{WH:1,DS1:1,DS2:1,DS3:1},
+  223:{WH:1,DS1:1,DS2:1,DS3:1},
+  224:{WH:1,DS1:1,DS2:1,DS3:1},
+  225:{WH:1,DS1:1,DS2:1,DS3:1},
+  226:{WH:1,DS1:1,DS2:1,DS3:1},
+  227:{WH:1,DS1:1,DS2:1,DS3:1},
+  228:{WH:1,DS1:1,DS2:1,DS3:1},
+  229:{WH:1,DS1:1,DS2:1,DS3:1},
+  230:{WH:1,DS1:1,DS2:1,DS3:1},
+  231:{WH:1,DS1:1,DS2:1,DS3:1},
+  232:{WH:1,DS1:1,DS2:1,DS3:1},
+  233:{WH:1,DS1:1,DS2:1,DS3:1},
+  234:{WH:1,DS1:1,DS2:1,DS3:1},
+  235:{WH:1,DS1:1,DS2:1,DS3:1},
+  236:{WH:1,DS1:1,DS2:1,DS3:1},
+  237:{WH:1,DS1:1,DS2:1,DS3:1},
+  238:{WH:1,DS1:1,DS2:1,DS3:1},
+  239:{WH:1,DS1:1,DS2:1,DS3:1},
+  240:{WH:1,DS1:1,DS2:1,DS3:1},
+  241:{WH:1,DS1:1,DS2:1,DS3:1},
+  242:{WH:1,DS1:1,DS2:1,DS3:1},
+  243:{WH:1,DS1:1,DS2:1,DS3:1},
+  244:{WH:1,DS1:1,DS2:1,DS3:1},
+  245:{WH:1,DS1:1,DS2:1,DS3:1},
+  246:{WH:1,DS1:1,DS2:1,DS3:1},
+  247:{WH:1,DS1:1,DS2:1,DS3:1},
+  248:{WH:1,DS1:1,DS2:1,DS3:1},
+  249:{WH:1,DS1:1,DS2:1,DS3:1},
+  250:{WH:1,DS1:1,DS2:1,DS3:1},
+  251:{WH:1,DS1:1,DS2:1,DS3:1},
+  252:{WH:1,DS1:1,DS2:1,DS3:1},
+  253:{WH:1,DS1:1,DS2:1,DS3:1},
+  254:{WH:1,DS1:1,DS2:1,DS3:1},
+  255:{WH:1,DS1:1,DS2:1,DS3:1},
+  256:{WH:1,DS1:1,DS2:1,DS3:1},
+  257:{WH:1,DS1:1,DS2:1,DS3:1},
+  258:{WH:1,DS1:1,DS2:1,DS3:1},
+  259:{WH:1,DS1:1,DS2:1,DS3:1},
+  260:{WH:1,DS1:1,DS2:1,DS3:1},
+  261:{WH:1,DS1:1,DS2:1,DS3:1},
+  262:{WH:1,DS1:1,DS2:1,DS3:1},
+  263:{WH:1,DS1:1,DS2:1,DS3:1},
+  264:{WH:1,DS1:1,DS2:1,DS3:1},
+  265:{WH:1,DS1:1,DS2:1,DS3:1},
+  266:{WH:1,DS1:1,DS2:1,DS3:1},
+  267:{WH:1,DS1:1,DS2:1,DS3:1},
+  268:{WH:1,DS1:1,DS2:1,DS3:1},
+  269:{WH:1,DS1:1,DS2:1,DS3:1},
+  270:{WH:1,DS1:1,DS2:1,DS3:1},
+  271:{WH:1,DS1:1,DS2:1,DS3:1},
+  272:{WH:1,DS1:1,DS2:1,DS3:1},
+  273:{WH:1,DS1:1,DS2:1,DS3:1},
+  274:{WH:1,DS1:1,DS2:1,DS3:1},
+  275:{WH:1,DS1:1,DS2:1,DS3:1},
+  276:{WH:1,DS1:1,DS2:1,DS3:1},
+  277:{WH:1,DS1:1,DS2:1,DS3:1},
+  278:{WH:1,DS1:1,DS2:1,DS3:1},
+  279:{WH:1,DS1:1,DS2:1,DS3:1},
+  280:{WH:1,DS1:1,DS2:1,DS3:1},
+  281:{WH:1,DS1:1,DS2:1,DS3:1},
+  282:{WH:1,DS1:1,DS2:1,DS3:1},
+  283:{WH:1,DS1:1,DS2:1,DS3:1},
+  284:{WH:1,DS1:1,DS2:1,DS3:1},
+  285:{WH:1,DS1:1,DS2:1,DS3:1},
+  286:{WH:1,DS1:1,DS2:1,DS3:1},
+  287:{WH:1,DS1:1,DS2:1,DS3:1},
+  288:{WH:1,DS1:1,DS2:1,DS3:1},
+  289:{WH:1,DS1:1,DS2:1,DS3:1},
+  290:{WH:1,DS1:1,DS2:1,DS3:1},
+  291:{WH:1,DS1:1,DS2:1,DS3:1},
+  292:{WH:1,DS1:1,DS2:1,DS3:1},
+  293:{WH:1,DS1:1,DS2:1,DS3:1},
+  294:{WH:1,DS1:1,DS2:1,DS3:1},
+  295:{WH:1,DS1:1,DS2:1,DS3:1},
+  296:{WH:1,DS1:1,DS2:1,DS3:1},
+  297:{WH:1,DS1:1,DS2:1,DS3:1},
+  298:{WH:1,DS1:1,DS2:1,DS3:1}
+};
+let consumption={
+  1:{DS1:2.0397,DS2:2.0397,DS3:2.0397},
+  2:{DS1:1.947,DS2:1.947,DS3:1.947},
+  3:{DS1:1.9205,DS2:1.9205,DS3:1.9205},
+  4:{DS1:1.8874,DS2:1.8874,DS3:1.8874},
+  5:{DS1:1.6358,DS2:1.6358,DS3:1.6358},
+  6:{DS1:1.4901,DS2:1.4901,DS3:1.4901},
+  7:{DS1:1.4636,DS2:1.4636,DS3:1.4636},
+  8:{DS1:1.3179,DS2:1.3179,DS3:1.3179},
+  9:{DS1:1.3046,DS2:1.3046,DS3:1.3046},
+  10:{DS1:1.2715,DS2:1.2715,DS3:1.2715},
+  11:{DS1:1.0662,DS2:1.0662,DS3:1.0662},
+  12:{DS1:1.0464,DS2:1.0464,DS3:1.0464},
+  13:{DS1:1.0066,DS2:1.0066,DS3:1.0066},
+  14:{DS1:0.9139,DS2:0.9139,DS3:0.9139},
+  15:{DS1:0.7881,DS2:0.7881,DS3:0.7881},
+  16:{DS1:0.7616,DS2:0.7616,DS3:0.7616},
+  17:{DS1:0.7351,DS2:0.7351,DS3:0.7351},
+  18:{DS1:0.6689,DS2:0.6689,DS3:0.6689},
+  19:{DS1:0.6159,DS2:0.6159,DS3:0.6159},
+  20:{DS1:0.5894,DS2:0.5894,DS3:0.5894},
+  21:{DS1:0.5894,DS2:0.5894,DS3:0.5894},
+  22:{DS1:0.5695,DS2:0.5695,DS3:0.5695},
+  23:{DS1:0.5099,DS2:0.5099,DS3:0.5099},
+  24:{DS1:0.4437,DS2:0.4437,DS3:0.4437},
+  25:{DS1:0.4305,DS2:0.4305,DS3:0.4305},
+  26:{DS1:0.4305,DS2:0.4305,DS3:0.4305},
+  27:{DS1:0.4106,DS2:0.4106,DS3:0.4106},
+  28:{DS1:0.3709,DS2:0.3709,DS3:0.3709},
+  29:{DS1:0.3642,DS2:0.3642,DS3:0.3642},
+  30:{DS1:0.3444,DS2:0.3444,DS3:0.3444},
+  31:{DS1:0.3377,DS2:0.3377,DS3:0.3377},
+  32:{DS1:0.3311,DS2:0.3311,DS3:0.3311},
+  33:{DS1:0.3245,DS2:0.3245,DS3:0.3245},
+  34:{DS1:0.3179,DS2:0.3179,DS3:0.3179},
+  35:{DS1:0.3179,DS2:0.3179,DS3:0.3179},
+  36:{DS1:0.298,DS2:0.298,DS3:0.298},
+  37:{DS1:0.2583,DS2:0.2583,DS3:0.2583},
+  38:{DS1:0.2517,DS2:0.2517,DS3:0.2517},
+  39:{DS1:0.245,DS2:0.245,DS3:0.245},
+  40:{DS1:0.245,DS2:0.245,DS3:0.245},
+  41:{DS1:0.2318,DS2:0.2318,DS3:0.2318},
+  42:{DS1:0.2318,DS2:0.2318,DS3:0.2318},
+  43:{DS1:0.2185,DS2:0.2185,DS3:0.2185},
+  44:{DS1:0.2119,DS2:0.2119,DS3:0.2119},
+  45:{DS1:0.2053,DS2:0.2053,DS3:0.2053},
+  46:{DS1:0.1987,DS2:0.1987,DS3:0.1987},
+  47:{DS1:0.1987,DS2:0.1987,DS3:0.1987},
+  48:{DS1:0.1987,DS2:0.1987,DS3:0.1987},
+  49:{DS1:0.1921,DS2:0.1921,DS3:0.1921},
+  50:{DS1:0.1921,DS2:0.1921,DS3:0.1921},
+  51:{DS1:0.1921,DS2:0.1921,DS3:0.1921},
+  52:{DS1:0.1854,DS2:0.1854,DS3:0.1854},
+  53:{DS1:0.1854,DS2:0.1854,DS3:0.1854},
+  54:{DS1:0.1854,DS2:0.1854,DS3:0.1854},
+  55:{DS1:0.1854,DS2:0.1854,DS3:0.1854},
+  56:{DS1:0.1788,DS2:0.1788,DS3:0.1788},
+  57:{DS1:0.1788,DS2:0.1788,DS3:0.1788},
+  58:{DS1:0.1722,DS2:0.1722,DS3:0.1722},
+  59:{DS1:0.1722,DS2:0.1722,DS3:0.1722},
+  60:{DS1:0.1722,DS2:0.1722,DS3:0.1722},
+  61:{DS1:0.1656,DS2:0.1656,DS3:0.1656},
+  62:{DS1:0.1656,DS2:0.1656,DS3:0.1656},
+  63:{DS1:0.1589,DS2:0.1589,DS3:0.1589},
+  64:{DS1:0.1589,DS2:0.1589,DS3:0.1589},
+  65:{DS1:0.1523,DS2:0.1523,DS3:0.1523},
+  66:{DS1:0.1391,DS2:0.1391,DS3:0.1391},
+  67:{DS1:0.1391,DS2:0.1391,DS3:0.1391},
+  68:{DS1:0.1325,DS2:0.1325,DS3:0.1325},
+  69:{DS1:0.1325,DS2:0.1325,DS3:0.1325},
+  70:{DS1:0.1325,DS2:0.1325,DS3:0.1325},
+  71:{DS1:0.1325,DS2:0.1325,DS3:0.1325},
+  72:{DS1:0.1325,DS2:0.1325,DS3:0.1325},
+  73:{DS1:0.1325,DS2:0.1325,DS3:0.1325},
+  74:{DS1:0.1325,DS2:0.1325,DS3:0.1325},
+  75:{DS1:0.1258,DS2:0.1258,DS3:0.1258},
+  76:{DS1:0.1258,DS2:0.1258,DS3:0.1258},
+  77:{DS1:0.1258,DS2:0.1258,DS3:0.1258},
+  78:{DS1:0.1258,DS2:0.1258,DS3:0.1258},
+  79:{DS1:0.1192,DS2:0.1192,DS3:0.1192},
+  80:{DS1:0.1192,DS2:0.1192,DS3:0.1192},
+  81:{DS1:0.1126,DS2:0.1126,DS3:0.1126},
+  82:{DS1:0.1126,DS2:0.1126,DS3:0.1126},
+  83:{DS1:0.1126,DS2:0.1126,DS3:0.1126},
+  84:{DS1:0.1126,DS2:0.1126,DS3:0.1126},
+  85:{DS1:0.106,DS2:0.106,DS3:0.106},
+  86:{DS1:0.0927,DS2:0.0927,DS3:0.0927},
+  87:{DS1:0.0927,DS2:0.0927,DS3:0.0927},
+  88:{DS1:0.0927,DS2:0.0927,DS3:0.0927},
+  89:{DS1:0.0861,DS2:0.0861,DS3:0.0861},
+  90:{DS1:0.0861,DS2:0.0861,DS3:0.0861},
+  91:{DS1:0.0795,DS2:0.0795,DS3:0.0795},
+  92:{DS1:0.0795,DS2:0.0795,DS3:0.0795},
+  93:{DS1:0.0795,DS2:0.0795,DS3:0.0795},
+  94:{DS1:0.0795,DS2:0.0795,DS3:0.0795},
+  95:{DS1:0.0728,DS2:0.0728,DS3:0.0728},
+  96:{DS1:0.0728,DS2:0.0728,DS3:0.0728},
+  97:{DS1:0.0728,DS2:0.0728,DS3:0.0728},
+  98:{DS1:0.0728,DS2:0.0728,DS3:0.0728},
+  99:{DS1:0.0728,DS2:0.0728,DS3:0.0728},
+  100:{DS1:0.0728,DS2:0.0728,DS3:0.0728},
+  101:{DS1:0.0728,DS2:0.0728,DS3:0.0728},
+  102:{DS1:0.0728,DS2:0.0728,DS3:0.0728},
+  103:{DS1:0.0728,DS2:0.0728,DS3:0.0728},
+  104:{DS1:0.0662,DS2:0.0662,DS3:0.0662},
+  105:{DS1:0.0662,DS2:0.0662,DS3:0.0662},
+  106:{DS1:0.0662,DS2:0.0662,DS3:0.0662},
+  107:{DS1:0.0662,DS2:0.0662,DS3:0.0662},
+  108:{DS1:0.0662,DS2:0.0662,DS3:0.0662},
+  109:{DS1:0.0662,DS2:0.0662,DS3:0.0662},
+  110:{DS1:0.0662,DS2:0.0662,DS3:0.0662},
+  111:{DS1:0.0662,DS2:0.0662,DS3:0.0662},
+  112:{DS1:0.0662,DS2:0.0662,DS3:0.0662},
+  113:{DS1:0.0662,DS2:0.0662,DS3:0.0662},
+  114:{DS1:0.0662,DS2:0.0662,DS3:0.0662},
+  115:{DS1:0.0662,DS2:0.0662,DS3:0.0662},
+  116:{DS1:0.0662,DS2:0.0662,DS3:0.0662},
+  117:{DS1:0.0662,DS2:0.0662,DS3:0.0662},
+  118:{DS1:0.0596,DS2:0.0596,DS3:0.0596},
+  119:{DS1:0.0596,DS2:0.0596,DS3:0.0596},
+  120:{DS1:0.0596,DS2:0.0596,DS3:0.0596},
+  121:{DS1:0.0596,DS2:0.0596,DS3:0.0596},
+  122:{DS1:0.0596,DS2:0.0596,DS3:0.0596},
+  123:{DS1:0.053,DS2:0.053,DS3:0.053},
+  124:{DS1:0.053,DS2:0.053,DS3:0.053},
+  125:{DS1:0.053,DS2:0.053,DS3:0.053},
+  126:{DS1:0.053,DS2:0.053,DS3:0.053},
+  127:{DS1:0.053,DS2:0.053,DS3:0.053},
+  128:{DS1:0.053,DS2:0.053,DS3:0.053},
+  129:{DS1:0.0464,DS2:0.0464,DS3:0.0464},
+  130:{DS1:0.0464,DS2:0.0464,DS3:0.0464},
+  131:{DS1:0.0464,DS2:0.0464,DS3:0.0464},
+  132:{DS1:0.0464,DS2:0.0464,DS3:0.0464},
+  133:{DS1:0.0464,DS2:0.0464,DS3:0.0464},
+  134:{DS1:0.0464,DS2:0.0464,DS3:0.0464},
+  135:{DS1:0.0464,DS2:0.0464,DS3:0.0464},
+  136:{DS1:0.0397,DS2:0.0397,DS3:0.0397},
+  137:{DS1:0.0397,DS2:0.0397,DS3:0.0397},
+  138:{DS1:0.0397,DS2:0.0397,DS3:0.0397},
+  139:{DS1:0.0397,DS2:0.0397,DS3:0.0397},
+  140:{DS1:0.0397,DS2:0.0397,DS3:0.0397},
+  141:{DS1:0.0397,DS2:0.0397,DS3:0.0397},
+  142:{DS1:0.0397,DS2:0.0397,DS3:0.0397},
+  143:{DS1:0.0397,DS2:0.0397,DS3:0.0397},
+  144:{DS1:0.0397,DS2:0.0397,DS3:0.0397},
+  145:{DS1:0.0397,DS2:0.0397,DS3:0.0397},
+  146:{DS1:0.0397,DS2:0.0397,DS3:0.0397},
+  147:{DS1:0.0397,DS2:0.0397,DS3:0.0397},
+  148:{DS1:0.0397,DS2:0.0397,DS3:0.0397},
+  149:{DS1:0.0397,DS2:0.0397,DS3:0.0397},
+  150:{DS1:0.0397,DS2:0.0397,DS3:0.0397},
+  151:{DS1:0.0397,DS2:0.0397,DS3:0.0397},
+  152:{DS1:0.0397,DS2:0.0397,DS3:0.0397},
+  153:{DS1:0.0397,DS2:0.0397,DS3:0.0397},
+  154:{DS1:0.0397,DS2:0.0397,DS3:0.0397},
+  155:{DS1:0.0397,DS2:0.0397,DS3:0.0397},
+  156:{DS1:0.0397,DS2:0.0397,DS3:0.0397},
+  157:{DS1:0.0331,DS2:0.0331,DS3:0.0331},
+  158:{DS1:0.0331,DS2:0.0331,DS3:0.0331},
+  159:{DS1:0.0331,DS2:0.0331,DS3:0.0331},
+  160:{DS1:0.0331,DS2:0.0331,DS3:0.0331},
+  161:{DS1:0.0331,DS2:0.0331,DS3:0.0331},
+  162:{DS1:0.0331,DS2:0.0331,DS3:0.0331},
+  163:{DS1:0.0331,DS2:0.0331,DS3:0.0331},
+  164:{DS1:0.0331,DS2:0.0331,DS3:0.0331},
+  165:{DS1:0.0331,DS2:0.0331,DS3:0.0331},
+  166:{DS1:0.0331,DS2:0.0331,DS3:0.0331},
+  167:{DS1:0.0331,DS2:0.0331,DS3:0.0331},
+  168:{DS1:0.0331,DS2:0.0331,DS3:0.0331},
+  169:{DS1:0.0331,DS2:0.0331,DS3:0.0331},
+  170:{DS1:0.0331,DS2:0.0331,DS3:0.0331},
+  171:{DS1:0.0331,DS2:0.0331,DS3:0.0331},
+  172:{DS1:0.0265,DS2:0.0265,DS3:0.0265},
+  173:{DS1:0.0265,DS2:0.0265,DS3:0.0265},
+  174:{DS1:0.0265,DS2:0.0265,DS3:0.0265},
+  175:{DS1:0.0265,DS2:0.0265,DS3:0.0265},
+  176:{DS1:0.0265,DS2:0.0265,DS3:0.0265},
+  177:{DS1:0.0265,DS2:0.0265,DS3:0.0265},
+  178:{DS1:0.0265,DS2:0.0265,DS3:0.0265},
+  179:{DS1:0.0265,DS2:0.0265,DS3:0.0265},
+  180:{DS1:0.0265,DS2:0.0265,DS3:0.0265},
+  181:{DS1:0.0265,DS2:0.0265,DS3:0.0265},
+  182:{DS1:0.0265,DS2:0.0265,DS3:0.0265},
+  183:{DS1:0.0265,DS2:0.0265,DS3:0.0265},
+  184:{DS1:0.0265,DS2:0.0265,DS3:0.0265},
+  185:{DS1:0.0265,DS2:0.0265,DS3:0.0265},
+  186:{DS1:0.0265,DS2:0.0265,DS3:0.0265},
+  187:{DS1:0.0265,DS2:0.0265,DS3:0.0265},
+  188:{DS1:0.0265,DS2:0.0265,DS3:0.0265},
+  189:{DS1:0.0265,DS2:0.0265,DS3:0.0265},
+  190:{DS1:0.0199,DS2:0.0199,DS3:0.0199},
+  191:{DS1:0.0199,DS2:0.0199,DS3:0.0199},
+  192:{DS1:0.0199,DS2:0.0199,DS3:0.0199},
+  193:{DS1:0.0199,DS2:0.0199,DS3:0.0199},
+  194:{DS1:0.0199,DS2:0.0199,DS3:0.0199},
+  195:{DS1:0.0199,DS2:0.0199,DS3:0.0199},
+  196:{DS1:0.0199,DS2:0.0199,DS3:0.0199},
+  197:{DS1:0.0199,DS2:0.0199,DS3:0.0199},
+  198:{DS1:0.0199,DS2:0.0199,DS3:0.0199},
+  199:{DS1:0.0199,DS2:0.0199,DS3:0.0199},
+  200:{DS1:0.0199,DS2:0.0199,DS3:0.0199},
+  201:{DS1:0.0199,DS2:0.0199,DS3:0.0199},
+  202:{DS1:0.0199,DS2:0.0199,DS3:0.0199},
+  203:{DS1:0.0199,DS2:0.0199,DS3:0.0199},
+  204:{DS1:0.0199,DS2:0.0199,DS3:0.0199},
+  205:{DS1:0.0199,DS2:0.0199,DS3:0.0199},
+  206:{DS1:0.0199,DS2:0.0199,DS3:0.0199},
+  207:{DS1:0.0199,DS2:0.0199,DS3:0.0199},
+  208:{DS1:0.0199,DS2:0.0199,DS3:0.0199},
+  209:{DS1:0.0199,DS2:0.0199,DS3:0.0199},
+  210:{DS1:0.0199,DS2:0.0199,DS3:0.0199},
+  211:{DS1:0.0199,DS2:0.0199,DS3:0.0199},
+  212:{DS1:0.0199,DS2:0.0199,DS3:0.0199},
+  213:{DS1:0.0199,DS2:0.0199,DS3:0.0199},
+  214:{DS1:0.0199,DS2:0.0199,DS3:0.0199},
+  215:{DS1:0.0132,DS2:0.0132,DS3:0.0132},
+  216:{DS1:0.0132,DS2:0.0132,DS3:0.0132},
+  217:{DS1:0.0132,DS2:0.0132,DS3:0.0132},
+  218:{DS1:0.0132,DS2:0.0132,DS3:0.0132},
+  219:{DS1:0.0132,DS2:0.0132,DS3:0.0132},
+  220:{DS1:0.0132,DS2:0.0132,DS3:0.0132},
+  221:{DS1:0.0132,DS2:0.0132,DS3:0.0132},
+  222:{DS1:0.0132,DS2:0.0132,DS3:0.0132},
+  223:{DS1:0.0132,DS2:0.0132,DS3:0.0132},
+  224:{DS1:0.0132,DS2:0.0132,DS3:0.0132},
+  225:{DS1:0.0132,DS2:0.0132,DS3:0.0132},
+  226:{DS1:0.0132,DS2:0.0132,DS3:0.0132},
+  227:{DS1:0.0132,DS2:0.0132,DS3:0.0132},
+  228:{DS1:0.0132,DS2:0.0132,DS3:0.0132},
+  229:{DS1:0.0132,DS2:0.0132,DS3:0.0132},
+  230:{DS1:0.0132,DS2:0.0132,DS3:0.0132},
+  231:{DS1:0.0132,DS2:0.0132,DS3:0.0132},
+  232:{DS1:0.0132,DS2:0.0132,DS3:0.0132},
+  233:{DS1:0.0132,DS2:0.0132,DS3:0.0132},
+  234:{DS1:0.0132,DS2:0.0132,DS3:0.0132},
+  235:{DS1:0.0132,DS2:0.0132,DS3:0.0132},
+  236:{DS1:0.0132,DS2:0.0132,DS3:0.0132},
+  237:{DS1:0.0132,DS2:0.0132,DS3:0.0132},
+  238:{DS1:0.0132,DS2:0.0132,DS3:0.0132},
+  239:{DS1:0.0132,DS2:0.0132,DS3:0.0132},
+  240:{DS1:0.0132,DS2:0.0132,DS3:0.0132},
+  241:{DS1:0.0132,DS2:0.0132,DS3:0.0132},
+  242:{DS1:0.0132,DS2:0.0132,DS3:0.0132},
+  243:{DS1:0.0132,DS2:0.0132,DS3:0.0132},
+  244:{DS1:0.0132,DS2:0.0132,DS3:0.0132},
+  245:{DS1:0.0132,DS2:0.0132,DS3:0.0132},
+  246:{DS1:0.0132,DS2:0.0132,DS3:0.0132},
+  247:{DS1:0.0132,DS2:0.0132,DS3:0.0132},
+  248:{DS1:0.0066,DS2:0.0066,DS3:0.0066},
+  249:{DS1:0.0066,DS2:0.0066,DS3:0.0066},
+  250:{DS1:0.0066,DS2:0.0066,DS3:0.0066},
+  251:{DS1:0.0066,DS2:0.0066,DS3:0.0066},
+  252:{DS1:0.0066,DS2:0.0066,DS3:0.0066},
+  253:{DS1:0.0066,DS2:0.0066,DS3:0.0066},
+  254:{DS1:0.0066,DS2:0.0066,DS3:0.0066},
+  255:{DS1:0.0066,DS2:0.0066,DS3:0.0066},
+  256:{DS1:0.0066,DS2:0.0066,DS3:0.0066},
+  257:{DS1:0.0066,DS2:0.0066,DS3:0.0066},
+  258:{DS1:0.0066,DS2:0.0066,DS3:0.0066},
+  259:{DS1:0.0066,DS2:0.0066,DS3:0.0066},
+  260:{DS1:0.0066,DS2:0.0066,DS3:0.0066},
+  261:{DS1:0.0066,DS2:0.0066,DS3:0.0066},
+  262:{DS1:0.0066,DS2:0.0066,DS3:0.0066},
+  263:{DS1:0.0066,DS2:0.0066,DS3:0.0066},
+  264:{DS1:0.0066,DS2:0.0066,DS3:0.0066},
+  265:{DS1:0.0066,DS2:0.0066,DS3:0.0066},
+  266:{DS1:0.0066,DS2:0.0066,DS3:0.0066},
+  267:{DS1:0.0066,DS2:0.0066,DS3:0.0066},
+  268:{DS1:0.0066,DS2:0.0066,DS3:0.0066},
+  269:{DS1:0.0066,DS2:0.0066,DS3:0.0066},
+  270:{DS1:0.0066,DS2:0.0066,DS3:0.0066},
+  271:{DS1:0.0066,DS2:0.0066,DS3:0.0066},
+  272:{DS1:0.0066,DS2:0.0066,DS3:0.0066},
+  273:{DS1:0.0066,DS2:0.0066,DS3:0.0066},
+  274:{DS1:0.0066,DS2:0.0066,DS3:0.0066},
+  275:{DS1:0.0066,DS2:0.0066,DS3:0.0066},
+  276:{DS1:0.0066,DS2:0.0066,DS3:0.0066},
+  277:{DS1:0.0066,DS2:0.0066,DS3:0.0066},
+  278:{DS1:0.0066,DS2:0.0066,DS3:0.0066},
+  279:{DS1:0.0066,DS2:0.0066,DS3:0.0066},
+  280:{DS1:0.0066,DS2:0.0066,DS3:0.0066},
+  281:{DS1:0.0066,DS2:0.0066,DS3:0.0066},
+  282:{DS1:0.0066,DS2:0.0066,DS3:0.0066},
+  283:{DS1:0.0066,DS2:0.0066,DS3:0.0066},
+  284:{DS1:0.0066,DS2:0.0066,DS3:0.0066},
+  285:{DS1:0.0066,DS2:0.0066,DS3:0.0066},
+  286:{DS1:0.0066,DS2:0.0066,DS3:0.0066},
+  287:{DS1:0.0066,DS2:0.0066,DS3:0.0066},
+  288:{DS1:0.0066,DS2:0.0066,DS3:0.0066},
+  289:{DS1:0.0066,DS2:0.0066,DS3:0.0066},
+  290:{DS1:0.0066,DS2:0.0066,DS3:0.0066},
+  291:{DS1:0.0066,DS2:0.0066,DS3:0.0066},
+  292:{DS1:0.0066,DS2:0.0066,DS3:0.0066},
+  293:{DS1:0.0066,DS2:0.0066,DS3:0.0066},
+  294:{DS1:0.0066,DS2:0.0066,DS3:0.0066},
+  295:{DS1:0.0066,DS2:0.0066,DS3:0.0066},
+  296:{DS1:0.0066,DS2:0.0066,DS3:0.0066},
+  297:{DS1:0.0066,DS2:0.0066,DS3:0.0066},
+  298:{DS1:0.0066,DS2:0.0066,DS3:0.0066}
+};
+let nextId=299;
+
+// ─────────────────────────────────────────────
+// CORE CALCULATIONS
+// ─────────────────────────────────────────────
+function doi(skuId,store){
+  const c=consumption[skuId]&&consumption[skuId][store];
+  if(!c||c===0)return Infinity;
+  return inventory[skuId][store]/c;
+}
+function doiStatus(d,threshold){
+  if(d===Infinity)return'na';
+  if(d<2)return'crit';
+  if(d<threshold)return'warn';
+  return'ok';
+}
+function doiLabel(d){
+  if(d===Infinity)return'—';
+  return(Math.round(d*10)/10)+'d';
+}
+function reorderQty(s,store){
+  const c=consumption[s.id][store]||0;
+  if(!c)return 0;
+  return Math.max(0,Math.ceil(c*s.threshold*2-inventory[s.id][store]));
+}
+function getAlerts(){
+  let a=[];
+  skus.forEach(s=>{
+    STORES.forEach(st=>{
+      const d=doi(s.id,st),status=doiStatus(d,s.threshold);
+      if(status==='crit'||status==='warn')
+        a.push({sku:s,store:st,doi:d,status,stock:inventory[s.id][st],cons:consumption[s.id][st]});
+    });
+  });
+  return a.sort((a,b)=>a.doi-b.doi);
+}
+
+// ─────────────────────────────────────────────
+// NAVIGATION
+// ─────────────────────────────────────────────
+const PAGE_TITLES={
+  dashboard:'Dashboard',facility:'Facility View',inventory:'Inventory Table',
+  update:'Update Stock Levels',reorder:'Reorder Queue',
+  consumption:'Consumption Rates',skus:'Manage SKUs'
+};
+function switchPage(page,el){
+  document.querySelectorAll('.page').forEach(p=>p.classList.remove('active'));
+  document.getElementById('page-'+page).classList.add('active');
+  document.querySelectorAll('.nav-btn').forEach(b=>b.classList.remove('active'));
+  if(el)el.classList.add('active');
+  document.getElementById('topbar-title').textContent=PAGE_TITLES[page]||page;
+  renderAll();
+}
+
+// ─────────────────────────────────────────────
+// DASHBOARD
+// ─────────────────────────────────────────────
+function renderMetrics(){
+  const al=getAlerts(),crit=al.filter(a=>a.status==='crit').length,warn=al.filter(a=>a.status==='warn').length;
+  const wh=skus.reduce((s,sk)=>s+(inventory[sk.id].WH||0),0);
+  const total=skus.reduce((s,sk)=>s+Object.values(inventory[sk.id]).reduce((a,b)=>a+b,0),0);
+  document.getElementById('metric-grid').innerHTML=`
+    <div class="metric-card"><div class="metric-label">Total SKUs</div><div class="metric-value">${skus.length}</div><div class="metric-sub">Across all locations</div></div>
+    <div class="metric-card mv-red"><div class="metric-label">Critical (DOI &lt; 2d)</div><div class="metric-value">${crit}</div><div class="metric-sub">${crit?'Act now':'All clear'}</div></div>
+    <div class="metric-card mv-amber"><div class="metric-label">Warnings</div><div class="metric-value">${warn}</div><div class="metric-sub">Below threshold</div></div>
+    <div class="metric-card mv-blue"><div class="metric-label">Warehouse Stock</div><div class="metric-value">${wh.toLocaleString()}</div><div class="metric-sub">Buffer units</div></div>
+  `;
+  const cb=document.getElementById('nb-crit'),wb2=document.getElementById('nb-warn');
+  cb.style.display=crit?'':'none';cb.textContent=crit;
+  wb2.style.display=warn?'':'none';wb2.textContent=warn;
+}
+
+function renderAlerts(){
+  const al=getAlerts().slice(0,7);
+  if(!al.length){document.getElementById('alerts-list').innerHTML='<div class="empty">✅ All stores healthy</div>';return;}
+  document.getElementById('alerts-list').innerHTML=al.map(a=>`
+    <div class="alert-item">
+      <div class="alert-icon ${a.status==='crit'?'ai-red':'ai-amber'}">
+        <svg width="14" height="14" fill="none" stroke="${a.status==='crit'?'var(--rmid)':'var(--amid)'}" stroke-width="2" viewBox="0 0 24 24">
+          ${a.status==='crit'?'<circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="12"/><line x1="12" y1="16" x2="12.01" y2="16"/>':'<path d="M10.29 3.86L1.82 18a2 2 0 0 0 1.71 3h16.94a2 2 0 0 0 1.71-3L13.71 3.86a2 2 0 0 0-3.42 0z"/><line x1="12" y1="9" x2="12" y2="13"/>'}</svg>
+      </div>
+      <div class="alert-body">
+        <div class="alert-title">${a.sku.name.split(',')[0]} · ${NAMES[a.store]}</div>
+        <div class="alert-desc" style="font-family:'DM Mono',monospace;font-size:11px;color:var(--faint);margin-bottom:2px">${a.sku.code}</div>
+        <div class="alert-desc">${a.stock} units · DOI ${doiLabel(a.doi)} · ${a.cons}/day</div>
+      </div>
+      <span class="badge badge-${a.status}">${a.status==='crit'?'Critical':'Warning'}</span>
+    </div>`).join('');
+}
+
+function renderFacilityHealth(){
+  const allLocs=['WH',...STORES];
+  document.getElementById('facility-health').innerHTML=allLocs.map(loc=>{
+    if(loc==='WH'){
+      const t=skus.reduce((s,sk)=>s+(inventory[sk.id].WH||0),0);
+      return`<div class="health-item"><div class="health-dot" style="background:var(--bmid)"></div>
+        <div class="health-info"><div class="health-name">Central Warehouse<span style="font-size:10px;color:var(--faint);font-weight:400;margin-left:6px">HH-WH-APP-GGN</span></div><div class="health-sub">${t.toLocaleString()} total units</div></div>
+        <span class="badge badge-info">Buffer</span></div>`;
+    }
+    const sa=getAlerts().filter(a=>a.store===loc);
+    const crit=sa.filter(a=>a.status==='crit').length,warn=sa.filter(a=>a.status==='warn').length;
+    const h=crit>0?'crit':warn>0?'warn':'ok';
+    const dv=skus.filter(s=>consumption[s.id]&&consumption[s.id][loc]>0).map(s=>doi(s.id,loc)).filter(d=>d!==Infinity);
+    const avg=dv.length?Math.round(dv.reduce((a,b)=>a+b,0)/dv.length*10)/10:0;
+    const dotC=h==='crit'?'var(--rmid)':h==='warn'?'var(--amid)':'var(--gmid)';
+    const pct=Math.min(100,avg/21*100);
+    return`<div class="health-item">
+      <div class="health-dot" style="background:${dotC}"></div>
+      <div class="health-info">
+        <div class="health-name">${NAMES[loc]}<span style="font-size:10px;color:var(--faint);font-weight:400;margin-left:6px">${CODES[loc]}</span></div>
+        <div class="health-sub">Avg DOI ${avg}d · ${crit} critical, ${warn} warnings</div>
+        <div class="progress-track"><div class="progress-fill" style="width:${pct}%;background:${dotC}"></div></div>
+      </div>
+      <span class="badge badge-${h}">${h==='crit'?'Critical':h==='warn'?'At Risk':'Healthy'}</span>
+    </div>`;
+  }).join('');
+}
+
+// ─────────────────────────────────────────────
+// FACILITY VIEW
+// ─────────────────────────────────────────────
+function switchFacility(loc,el){
+  activeFacility=loc;
+  document.querySelectorAll('#facility-tabs .ftab').forEach(b=>b.classList.remove('active'));
+  if(el)el.classList.add('active');
+  renderFacilityStats();
+  renderFacilityTable();
+  renderFacilityUpdateLog();
+}
+
+function renderFacilityStats(){
+  const loc=activeFacility;
+  const isStore=STORES.includes(loc);
+  const totalStock=skus.reduce((s,sk)=>s+(inventory[sk.id][loc]||0),0);
+  let crit=0,warn=0,ok=0;
+  if(isStore){
+    skus.forEach(s=>{
+      const st=doiStatus(doi(s.id,loc),s.threshold);
+      if(st==='crit')crit++;else if(st==='warn')warn++;else ok++;
+    });
+  }
+  const doiVals=skus.filter(s=>consumption[s.id]&&consumption[s.id][loc]>0).map(s=>doi(s.id,loc)).filter(d=>d!==Infinity);
+  const avgDoi=doiVals.length?Math.round(doiVals.reduce((a,b)=>a+b,0)/doiVals.length*10)/10:'—';
+
+  document.getElementById('facility-stats').innerHTML=`
+    <div class="fstat"><div class="fstat-val">${totalStock.toLocaleString()}</div><div class="fstat-label">Total Units</div></div>
+    <div class="fstat"><div class="fstat-val" style="color:var(${isStore?(crit>0?'--rmid':warn>0?'--amid':'--gmid'):'--bmid'})">${isStore?crit:'—'}</div><div class="fstat-label">Critical SKUs</div></div>
+    <div class="fstat"><div class="fstat-val">${isStore?avgDoi:'—'}</div><div class="fstat-label">Avg DOI (days)</div></div>
+  `;
+}
+
+function renderFacilityTable(){
+  const loc=activeFacility;
+  const isStore=STORES.includes(loc);
+  const search=(document.getElementById('fac-search').value||'').toLowerCase();
+  const statusF=document.getElementById('fac-filter-status').value;
+  const catF=document.getElementById('fac-filter-cat').value;
+
+  let rows=skus.filter(s=>{
+    if(!s.name.toLowerCase().includes(search)&&!s.code.toLowerCase().includes(search))return false;
+    if(catF!=='all'&&s.cat!==catF)return false;
+    if(isStore&&statusF!=='all'){
+      const st=doiStatus(doi(s.id,loc),s.threshold);
+      if(st!==statusF)return false;
+    }
+    return true;
+  });
+
+  document.getElementById('fac-count').textContent=rows.length+' SKUs';
+
+  const doiCol=isStore?`<th class="num">DOI (days)</th><th>Status</th>`:'';
+  document.getElementById('facility-table').innerHTML=`
+    <table>
+      <thead><tr>
+        <th>SKU ID</th><th>SKU Name</th><th>Category</th>
+        <th class="num">Stock (units)</th>
+        ${isStore?`<th class="num">Rate (u/day)</th>`:'<th class="num">Covers DS1 (days)</th>'}
+        ${doiCol}
+      </tr></thead>
+      <tbody>
+        ${rows.map(s=>{
+          const stock=inventory[s.id][loc]||0;
+          const d=isStore?doi(s.id,loc):null;
+          const st=isStore?doiStatus(d,s.threshold):'ok';
+          const rate=isStore?(consumption[s.id][loc]||0):null;
+          const coversDays=!isStore&&rate?Math.round(stock/(consumption[s.id]['DS1']||1)*10)/10:'—';
+          return`<tr>
+            <td class="mono">${s.skuid}</td>
+            <td style="font-weight:500;max-width:280px">${s.name.split(',').slice(-1)[0].trim()}</td>
+            <td><span class="badge badge-info" style="font-size:10px">${s.cat.replace('Washing Machine','WM')}</span></td>
+            <td class="num" style="font-weight:600">${stock.toLocaleString()}</td>
+            ${isStore?`<td class="num" style="color:var(--blue)">${rate}</td>`:`<td class="num" style="color:var(--muted)">${coversDays}</td>`}
+            ${isStore?`
+              <td class="num"><span class="doi-${st}">${doiLabel(d)}</span></td>
+              <td><span class="badge badge-${st}">${st==='crit'?'Critical':st==='warn'?'Warning':st==='na'?'N/A':'OK'}</span></td>
+            `:''}</tr>`;
+        }).join('')}
+      </tbody>
+    </table>
+  `;
+}
+
+// ─────────────────────────────────────────────
+// INVENTORY TABLE
+// ─────────────────────────────────────────────
+function renderInventory(){
+  const storeF=document.getElementById('inv-store').value;
+  const statusF=document.getElementById('inv-status').value;
+  const catF=document.getElementById('inv-cat').value;
+  const search=(document.getElementById('inv-search').value||'').toLowerCase();
+  const visStores=storeF==='all'?STORES:[storeF];
+
+  let rows=skus.filter(s=>{
+    if(!s.name.toLowerCase().includes(search)&&!s.code.toLowerCase().includes(search))return false;
+    if(catF!=='all'&&s.cat!==catF)return false;
+    if(statusF!=='all'&&!visStores.some(st=>doiStatus(doi(s.id,st),s.threshold)===statusF))return false;
+    return true;
+  });
+  document.getElementById('inv-count').textContent=rows.length+' SKUs';
+  document.getElementById('inventory-table').innerHTML=`
+    <table>
+      <thead><tr>
+        <th>SKU</th><th>Category</th><th class="num">WH</th>
+        ${visStores.map(st=>`<th class="num">${NAMES[st]}</th><th class="num">DOI</th>`).join('')}
+        <th>Status</th>
+      </tr></thead>
+      <tbody>
+        ${rows.map(s=>{
+          const worst=visStores.map(st=>doiStatus(doi(s.id,st),s.threshold))
+            .reduce((b,c)=>c==='crit'?'crit':c==='warn'&&b!=='crit'?'warn':b,'ok');
+          return`<tr>
+            <td><span style="font-weight:500">${s.name.split(',').slice(-1)[0].trim()}</span><br>
+            <span class="mono" style="font-size:10px;color:var(--faint)">${s.code}</span></td>
+            <td><span class="badge badge-info" style="font-size:10px">${s.cat.replace('Washing Machine','WM')}</span></td>
+            <td class="num">${inventory[s.id].WH}</td>
+            ${visStores.map(st=>{
+              const d=doi(s.id,st),st2=doiStatus(d,s.threshold);
+              return`<td class="num">${inventory[s.id][st]}</td><td class="num"><span class="doi-${st2}">${doiLabel(d)}</span></td>`;
+            }).join('')}
+            <td><span class="badge badge-${worst}">${worst==='crit'?'Critical':worst==='warn'?'Warning':'OK'}</span></td>
+          </tr>`;
+        }).join('')}
+      </tbody>
+    </table>
+  `;
+}
+
+// ─────────────────────────────────────────────
+// UPDATE STOCK
+// ─────────────────────────────────────────────
+function switchUpdateFacility(loc,el){
+  updateFacility=loc;
+  document.querySelectorAll('[id^="upd-tab-"]').forEach(b=>b.classList.remove('active'));
+  if(el)el.classList.add('active');
+  document.getElementById('upd-facility-name').textContent=NAMES[loc];
+  renderUpdateTable();
+}
+
+function renderUpdateTable(){
+  const loc=updateFacility;
+  const search=(document.getElementById('upd-search').value||'').toLowerCase();
+  const catF=document.getElementById('upd-cat').value;
+  const isStore=STORES.includes(loc);
+
+  const rows=skus.filter(s=>{
+    if(!s.name.toLowerCase().includes(search)&&!s.code.toLowerCase().includes(search))return false;
+    if(catF!=='all'&&s.cat!==catF)return false;
+    return true;
+  });
+
+  document.getElementById('update-table').innerHTML=`
+    <table>
+      <thead><tr>
+        <th>SKU</th><th>Category</th>
+        <th class="num">Current Stock</th>
+        ${isStore?'<th class="num">DOI</th>':''}
+        <th class="num">New Count</th>
+        <th>Save</th>
+      </tr></thead>
+      <tbody>
+        ${rows.map(s=>{
+          const stock=inventory[s.id][loc]||0;
+          const d=isStore?doi(s.id,loc):null;
+          const st=isStore?doiStatus(d,s.threshold):'ok';
+          return`<tr id="upd-row-${s.id}">
+            <td><span style="font-weight:500;font-size:12px">${s.name.split(',').slice(-1)[0].trim()}</span></td>
+            <td><span class="badge badge-info" style="font-size:10px">${s.cat.replace('Washing Machine','WM')}</span></td>
+            <td class="num" id="upd-cur-${s.id}">${stock}</td>
+            ${isStore?`<td class="num"><span class="doi-${st}" id="upd-doi-${s.id}">${doiLabel(d)}</span></td>`:''}
+            <td class="num">
+              <input type="number" class="inline-edit" id="upd-inp-${s.id}" 
+                value="${stock}" min="0"
+                onchange="previewStockUpdate(${s.id},this.value)">
+            </td>
+            <td>
+              <button class="btn btn-sm" onclick="saveStockUpdate(${s.id})">Save</button>
+              <span class="save-indicator" id="upd-ok-${s.id}">✓</span>
+            </td>
+          </tr>`;
+        }).join('')}
+      </tbody>
+    </table>
+  `;
+}
+
+function previewStockUpdate(id,val){
+  // Live preview: show new DOI as user types
+  const loc=updateFacility;
+  const isStore=STORES.includes(loc);
+  if(!isStore)return;
+  const s=skus.find(sk=>sk.id===id);
+  const newStock=parseInt(val)||0;
+  const oldInv=inventory[id][loc];
+  inventory[id][loc]=newStock; // temporarily
+  const d=doi(id,loc);
+  const st=doiStatus(d,s.threshold);
+  const doiEl=document.getElementById(`upd-doi-${id}`);
+  if(doiEl){doiEl.textContent=doiLabel(d);doiEl.className='doi-'+st;}
+  inventory[id][loc]=oldInv; // revert preview
+}
+
+function saveStockUpdate(id){
+  const loc=updateFacility;
+  const val=parseInt(document.getElementById(`upd-inp-${id}`).value)||0;
+  inventory[id][loc]=val;
+  const s=skus.find(sk=>sk.id===id);
+  const _logE1={facility:loc,skusChanged:1,method:'manual',summary:(s?s.skuid:'SKU')+' → '+val+' units'};
+  logStockUpdate(loc,1,'manual',`${s?s.skuid:'SKU'} → ${val} units`);
+  queueSync(id,loc,val,_logE1);
+  // Update displayed current stock
+  const curEl=document.getElementById(`upd-cur-${id}`);
+  if(curEl)curEl.textContent=val;
+  // Update DOI
+  const isStore=STORES.includes(loc);
+  if(isStore){
+    const sk=s||skus.find(sk=>sk.id===id);
+    const d=doi(id,loc);
+    const st=doiStatus(d,sk.threshold);
+    const doiEl=document.getElementById(`upd-doi-${id}`);
+    if(doiEl){doiEl.textContent=doiLabel(d);doiEl.className='doi-'+st;}
+  }
+  const ind=document.getElementById(`upd-ok-${id}`);
+  if(ind){ind.style.opacity=1;setTimeout(()=>ind.style.opacity=0,1500);}
+  renderMetrics();renderAlerts();renderFacilityHealth();
+  renderFacilityUpdateLog();
+  updateNavBadges();
+}
+
+function saveAllStockUpdates(){
+  let changed=0;
+  skus.forEach(s=>{
+    const inp=document.getElementById(`upd-inp-${s.id}`);
+    if(inp){inventory[s.id][updateFacility]=parseInt(inp.value)||0;changed++;}
+  });
+  logStockUpdate(updateFacility,changed,'bulk',`${changed} SKUs updated via bulk entry`);
+  // Queue sync for each changed SKU
+  skus.forEach(s=>{
+    const inp=document.getElementById(`upd-inp-${s.id}`);
+    if(inp) queueSync(s.id,updateFacility,parseInt(inp.value)||0);
+  });
+  queueSync.__logOverride={facility:updateFacility,skusChanged:changed,method:'bulk',summary:changed+' SKUs updated via bulk entry'};
+  renderAll();
+  const msg=document.getElementById('upd-saved-msg');
+  msg.textContent='✓ All saved'; msg.style.opacity=1;
+  setTimeout(()=>msg.style.opacity=0,2000);
+  toast(`All stock counts saved for ${NAMES[updateFacility]}`);
+}
+
+function applySingleUpdate(){
+  const loc=document.getElementById('single-facility').value;
+  const skuId=parseInt(document.getElementById('single-sku').value);
+  const qty=parseInt(document.getElementById('single-qty').value)||0;
+  const reason=document.getElementById('single-reason').value;
+  if(!skuId){toast('Select a SKU');return;}
+  const s=skus.find(sk=>sk.id===skuId);
+  inventory[skuId][loc]=qty;
+  logStockUpdate(loc,1,'single',`${s?s.skuid+' · ':''} ${qty} units · ${reason}`);
+  queueSync(skuId,loc,qty,{facility:loc,skusChanged:1,method:'single',summary:(s?s.skuid+' · ':'')+qty+' units · '+reason});
+  renderAll();
+  toast(`Updated: ${NAMES[loc]} · ${qty} units · ${reason}`);
+  document.getElementById('single-qty').value='';
+}
+
+function populateSingleSkuSelect(){
+  const sel=document.getElementById('single-sku');
+  sel.innerHTML=skus.map(s=>`<option value="${s.id}">${s.skuid} — ${s.name.split(',').slice(-1)[0].trim().substring(0,35)}</option>`).join('');
+}
+
+// ─────────────────────────────────────────────
+// REORDER QUEUE
+// ─────────────────────────────────────────────
+function renderReorder(){
+  const storeF=document.getElementById('reo-filter').value;
+  const visStores=storeF==='all'?STORES:[storeF];
+  const alerts=getAlerts().filter(a=>visStores.includes(a.store));
+  if(!alerts.length){
+    document.getElementById('reorder-content').innerHTML='<div class="card"><div class="empty">✅ No reorders needed</div></div>';return;
+  }
+  const crits=alerts.filter(a=>a.status==='crit'),warns=alerts.filter(a=>a.status==='warn');
+  const card=(title,items,color)=>{
+    if(!items.length)return'';
+    return`<div class="card">
+      <div class="card-title" style="color:${color}">${title} (${items.length})</div>
+      ${items.map(a=>{
+        const qty=reorderQty(a.sku,a.store);
+        const canR=inventory[a.sku.id].WH>=qty&&qty>0;
+        return`<div class="reo-item">
+          <div class="reo-body">
+            <div class="reo-title">${a.sku.name.split(',').slice(-1)[0].trim()}
+              <span class="badge badge-${a.status}">${a.status==='crit'?'Critical':'Warning'}</span>
+              <span class="badge badge-info">${NAMES[a.store]}</span>
+            </div>
+            <div class="reo-desc" style="font-family:'DM Mono',monospace;font-size:11px;color:var(--faint);margin-bottom:2px">${a.sku.skuid} · ${a.sku.code}</div>
+            <div class="reo-desc">Stock: ${a.stock} · DOI: ${doiLabel(a.doi)} · Rate: ${a.cons}/day · WH: ${inventory[a.sku.id].WH} units</div>
+          </div>
+          <div class="reo-right">
+            <div class="reo-qty">${qty}</div>
+            <div class="reo-qty-label">units to send</div>
+            <button class="btn btn-sm" style="margin-top:5px" 
+              onclick="replenish(${a.sku.id},'${a.store}',${qty})"
+              ${!canR?'disabled style="opacity:.4"':''}>
+              ${canR?'Replenish':'WH Low'}
+            </button>
+          </div>
+        </div>`;
+      }).join('')}
+    </div>`;
+  };
+  document.getElementById('reorder-content').innerHTML=
+    card('⚡ Immediate Action',crits,'var(--red)')+
+    card('📋 Plan Replenishment',warns,'var(--amber)')+
+    `<p style="font-size:12px;color:var(--faint);margin-top:.5rem">Qty = 2× threshold. Replenish moves units from Warehouse → Store.</p>`;
+}
+
+function replenish(id,store,qty){
+  if(inventory[id].WH<qty){toast('Insufficient warehouse stock');return;}
+  inventory[id].WH-=qty;inventory[id][store]+=qty;
+  const s=skus.find(sk=>sk.id===id);
+  logStockUpdate('WH',1,'replenish',`Sent ${qty} units of ${s?s.skuid:'SKU'} → ${NAMES[store]}`);
+  logStockUpdate(store,1,'replenish',`Received ${qty} units of ${s?s.skuid:'SKU'} from Warehouse`);
+  renderAll();toast(`Moved ${qty} units to ${NAMES[store]}`);
+}
+
+function replenishAllCritical(){
+  const crits=getAlerts().filter(a=>a.status==='crit');
+  let done=0;const storesHit=new Set();
+  crits.forEach(a=>{
+    const qty=reorderQty(a.sku,a.store);
+    if(inventory[a.sku.id].WH>=qty&&qty>0){
+      inventory[a.sku.id].WH-=qty;inventory[a.sku.id][a.store]+=qty;
+      done++;storesHit.add(a.store);
+    }
+  });
+  if(done){
+    logStockUpdate('WH',done,'replenish',`Auto-replenished ${done} critical SKUs to: ${[...storesHit].map(s=>NAMES[s]).join(', ')}`);
+    storesHit.forEach(st=>logStockUpdate(st,done,'replenish',`Auto-replenish: ${done} critical SKUs received from Warehouse`));
+    // Sync all affected stores
+    crits.forEach(a=>{
+      queueSync(a.sku.id,'WH',inventory[a.sku.id].WH);
+      queueSync(a.sku.id,a.store,inventory[a.sku.id][a.store]);
+    });
+  }
+  renderAll();toast(done?`Replenished ${done} critical items`:'WH stock too low');
+}
+
+// ─────────────────────────────────────────────
+// CONSUMPTION (PASSWORD PROTECTED VIEW-ONLY)
+// ─────────────────────────────────────────────
+function checkPassword(){
+  const pw=document.getElementById('cons-pw-input').value;
+  const err=document.getElementById('cons-pw-error');
+  if(pw===CONS_PASSWORD){
+    consUnlocked=true;
+    document.getElementById('cons-pw-gate').style.display='none';
+    document.getElementById('cons-table-wrap').style.display='block';
+    err.textContent='';
+    renderConsumptionTable();
+  }else{
+    err.textContent='Incorrect password. Try again.';
+    document.getElementById('cons-pw-input').value='';
+    document.getElementById('cons-pw-input').focus();
+  }
+}
+
+function lockConsumption(){
+  consUnlocked=false;
+  document.getElementById('cons-pw-gate').style.display='flex';
+  document.getElementById('cons-table-wrap').style.display='none';
+  document.getElementById('cons-pw-input').value='';
+}
+
+function renderConsumptionTable(){
+  if(!consUnlocked)return;
+  const search=(document.getElementById('cons-search').value||'').toLowerCase();
+  const catF=document.getElementById('cons-cat').value;
+  const rows=skus.filter(s=>{
+    if(!s.name.toLowerCase().includes(search)&&!s.code.toLowerCase().includes(search))return false;
+    if(catF!=='all'&&s.cat!==catF)return false;
+    return true;
+  });
+  document.getElementById('cons-table').innerHTML=`
+    <table>
+      <thead><tr>
+        <th>SKU ID</th><th>SKU Name</th><th>Category</th>
+        <th class="num">DS1 Rate<br><span style="font-weight:400;text-transform:none">(pilot 151d)</span></th>
+        <th class="num">DS2 Rate<br><span style="font-weight:400;text-transform:none">(mirrors DS1)</span></th>
+        <th class="num">DS3 Rate<br><span style="font-weight:400;text-transform:none">(mirrors DS1)</span></th>
+        <th class="num">Avg/day</th>
+        <th>Threshold</th>
+      </tr></thead>
+      <tbody>
+        ${rows.map(s=>{
+          const r=consumption[s.id];
+          const avg=Math.round((r.DS1+r.DS2+r.DS3)/3*1000)/1000;
+          return`<tr>
+            <td class="mono">${s.skuid}</td>
+            <td style="font-size:12px;font-weight:500">${s.name.split(',').slice(-1)[0].trim()}</td>
+            <td><span class="badge badge-info" style="font-size:10px">${s.cat.replace('Washing Machine','WM')}</span></td>
+            <td class="cons-cell">${r.DS1}</td>
+            <td class="cons-cell" style="color:var(--gmid)">${r.DS2} <span style="font-size:9px;color:var(--faint)">↗DS1</span></td>
+            <td class="cons-cell" style="color:var(--gmid)">${r.DS3} <span style="font-size:9px;color:var(--faint)">↗DS1</span></td>
+            <td class="cons-cell" style="color:var(--muted)">${avg}</td>
+            <td><span class="badge badge-warn">&lt; ${s.threshold}d</span></td>
+          </tr>`;
+        }).join('')}
+      </tbody>
+    </table>
+  `;
+}
+
+// ─────────────────────────────────────────────
+// MANAGE SKUS
+// ─────────────────────────────────────────────
+function renderSkuManage(){
+  document.getElementById('sku-manage-table').innerHTML=`
+    <table>
+      <thead><tr><th>SKU ID</th><th>SKU Name</th><th>Category</th><th class="num">Threshold</th><th class="num">Total Stock</th><th>Actions</th></tr></thead>
+      <tbody>
+        ${skus.map(s=>{
+          const total=LOCS.reduce((a,l)=>a+(inventory[s.id][l]||0),0);
+          return`<tr>
+            <td class="mono">${s.skuid}</td>
+            <td style="font-weight:500;font-size:12px">${s.name.split(',').slice(-1)[0].trim()}</td>
+            <td><span class="badge badge-info" style="font-size:10px">${s.cat.replace('Washing Machine','WM')}</span></td>
+            <td class="num">${s.threshold}d</td>
+            <td class="num">${total}</td>
+            <td>
+              <button class="btn btn-sm" onclick="editSku(${s.id})" style="margin-right:4px">Edit</button>
+              <button class="btn btn-sm" style="color:var(--red);border-color:var(--rmid)" onclick="deleteSku(${s.id})">Delete</button>
+            </td>
+          </tr>`;
+        }).join('')}
+      </tbody>
+    </table>
+  `;
+}
+
+// ─────────────────────────────────────────────
+// ADD / EDIT / DELETE SKU
+// ─────────────────────────────────────────────
+function openAddSku(){
+  editingSkuId=null;
+  document.getElementById('modal-title-text').textContent='Add New SKU';
+  ['m-name','m-thresh'].forEach(id=>document.getElementById(id).value=id==='m-thresh'?'7':'');
+  ['m-wh','m-ds1','m-ds2','m-ds3','m-c1'].forEach(id=>document.getElementById(id).value='0');
+  document.getElementById('modal-add').classList.add('open');
+}
+
+function editSku(id){
+  editingSkuId=id;
+  const s=skus.find(sk=>sk.id===id);
+  document.getElementById('modal-title-text').textContent='Edit SKU';
+  document.getElementById('m-name').value=s.name;
+  document.getElementById('m-thresh').value=s.threshold;
+  document.getElementById('m-wh').value=inventory[id].WH;
+  document.getElementById('m-ds1').value=inventory[id].DS1;
+  document.getElementById('m-ds2').value=inventory[id].DS2;
+  document.getElementById('m-ds3').value=inventory[id].DS3;
+  document.getElementById('m-c1').value=consumption[id].DS1;
+  document.getElementById('modal-add').classList.add('open');
+}
+
+function saveSku(){
+  const name=document.getElementById('m-name').value.trim();
+  if(!name){toast('Enter a SKU name');return;}
+  const cat=document.getElementById('m-cat').value;
+  const thresh=parseInt(document.getElementById('m-thresh').value)||7;
+  const wh=+document.getElementById('m-wh').value||0;
+  const ds1=+document.getElementById('m-ds1').value||0;
+  const ds2=+document.getElementById('m-ds2').value||0;
+  const ds3=+document.getElementById('m-ds3').value||0;
+  const c1=parseFloat(document.getElementById('m-c1').value)||0;
+
+  if(editingSkuId){
+    const s=skus.find(sk=>sk.id===editingSkuId);
+    s.name=name;s.cat=cat;s.threshold=thresh;
+    inventory[editingSkuId]={WH:wh,DS1:ds1,DS2:ds2,DS3:ds3};
+    consumption[editingSkuId]={DS1:c1,DS2:c1,DS3:c1};
+    toast('SKU updated');
+  }else{
+    const id=nextId++;
+    const skuid=`SKU${String(id).padStart(3,'0')}`;
+    skus.push({id,skuid,code:'CUSTOM',name,cat,threshold:thresh});
+    inventory[id]={WH:wh,DS1:ds1,DS2:ds2,DS3:ds3};
+    consumption[id]={DS1:c1,DS2:c1,DS3:c1};
+    toast(name+' added');
+  }
+  closeModal('modal-add');renderAll();
+}
+
+function deleteSku(id){
+  if(!confirm('Delete this SKU?'))return;
+  skus=skus.filter(s=>s.id!==id);
+  delete inventory[id];delete consumption[id];
+  toast('SKU deleted');renderAll();
+}
+
+// ─────────────────────────────────────────────
+// UTILS
+// ─────────────────────────────────────────────
+function closeModal(id){document.getElementById(id).classList.remove('open');}
+function toast(msg){
+  const t=document.getElementById('toast');t.textContent=msg;
+  t.classList.add('show');setTimeout(()=>t.classList.remove('show'),2200);
+}
+function updateNavBadges(){
+  const al=getAlerts();
+  const crit=al.filter(a=>a.status==='crit').length;
+  const warn=al.filter(a=>a.status==='warn').length;
+  const cb=document.getElementById('nb-crit'),wb=document.getElementById('nb-warn');
+  cb.style.display=crit?'':'none';cb.textContent=crit;
+  wb.style.display=warn?'':'none';wb.textContent=warn;
+}
+
+function renderAll(){
+  populateTransferSkuSelect();
+  renderMetrics();renderAlerts();renderFacilityHealth();
+  renderFacilityStats();renderFacilityTable();renderFacilityUpdateLog();
+  renderInventory();renderUpdateTable();renderReorder();
+  renderSkuManage();
+  if(consUnlocked)renderConsumptionTable();
+  populateSingleSkuSelect();
+  updateNavBadges();
+  document.getElementById('last-updated').textContent='Updated '+new Date().toLocaleTimeString([],{hour:'2-digit',minute:'2-digit'});
+}
+
+// ─────────────────────────────────────────────
+// EXCEL IMPORT
+// ─────────────────────────────────────────────
+let xlsRows = [];
+let xlsPreviewData = [];
+let xlsFacility = 'WH';  // selected facility for this upload
+
+// Auto-detect columns — flexible spellings
+function detectXlsCol(headers, targets) {
+  const tl = targets.map(t => t.toLowerCase().trim());
+  for (const h of headers) {
+    if (tl.includes(h.toLowerCase().trim())) return h;
+  }
+  // fuzzy fallback
+  for (const h of headers) {
+    const hl = h.toLowerCase().trim();
+    for (const t of tl) {
+      if (hl.includes(t) || t.includes(hl)) return h;
+    }
+  }
+  return '';
+}
+
+function selectXlsFacility(loc, el) {
+  xlsFacility = loc;
+  document.querySelectorAll('[id^="xls-tab-"]').forEach(b => b.classList.remove('active'));
+  if (el) el.classList.add('active');
+  const label = NAMES[loc] + ' (' + CODES[loc] + ')';
+  document.getElementById('xls-facility-label').textContent = label;
+  document.getElementById('xls-apply-facility-label').textContent = label;
+  // Reset any existing preview when facility changes
+  if (xlsRows.length) runImportPreview();
+}
+
+function handleXlsDrop(e) {
+  e.preventDefault();
+  document.getElementById('xls-drop').classList.remove('dragover');
+  const file = e.dataTransfer.files[0];
+  if (file) handleXlsFile(file);
+}
+
+function handleXlsFile(file) {
+  if (!file) return;
+  if (!window.XLSX) { toast('SheetJS not loaded — check internet connection'); return; }
+  const reader = new FileReader();
+  reader.onload = function(evt) {
+    try {
+      const wb = XLSX.read(evt.target.result, { type: 'array' });
+      const ws = wb.Sheets[wb.SheetNames[0]];
+      const rows = XLSX.utils.sheet_to_json(ws, { defval: '' });
+      if (!rows.length) { toast('File appears empty'); return; }
+      xlsRows = rows;
+
+      const headers = Object.keys(rows[0]);
+      // Auto-detect the three expected columns
+      const codeCol = detectXlsCol(headers, ['SKU Code','SKU_Code','Code','code','sku code','part code','item code']);
+      const nameCol = detectXlsCol(headers, ['SKU Name','SKU_Name','Name','name','sku name','part name','item name']);
+      const qtyCol  = detectXlsCol(headers, ['SKU Qty','SKU_Qty','Qty','qty','quantity','stock','units','count','SKU Quantity']);
+
+      const detectedList = [
+        codeCol ? `<span class="col-tag">Code → ${codeCol}</span>` : '<span class="col-tag" style="color:var(--red)">Code: NOT FOUND</span>',
+        nameCol ? `<span class="col-tag">Name → ${nameCol}</span>` : '',
+        qtyCol  ? `<span class="col-tag">Qty → ${qtyCol}</span>`  : '<span class="col-tag" style="color:var(--red)">Qty: NOT FOUND</span>',
+      ].filter(Boolean).join(' ');
+
+      document.getElementById('xls-detected-cols').innerHTML = '<strong>Detected: </strong>' + detectedList;
+      document.getElementById('xls-drop').style.display = 'none';
+
+      // Store detected cols on rows for preview
+      xlsRows._codeCol = codeCol;
+      xlsRows._nameCol = nameCol;
+      xlsRows._qtyCol  = qtyCol;
+
+      if (!codeCol || !qtyCol) {
+        toast('Could not find SKU Code or SKU Qty columns — check column names');
+        document.getElementById('xls-detected-cols').style.color = 'var(--red)';
+        document.getElementById('xls-drop').style.display = 'block';
+        return;
+      }
+      runImportPreview();
+    } catch(err) {
+      toast('Could not read file: ' + err.message);
+    }
+  };
+  reader.readAsArrayBuffer(file);
+}
+
+function runImportPreview() {
+  if (!xlsRows.length) return;
+  const codeCol = xlsRows._codeCol;
+  const qtyCol  = xlsRows._qtyCol;
+  const loc     = xlsFacility;
+
+  // Build lookup by code and skuid
+  const codeMap = {};
+  skus.forEach(s => {
+    codeMap[s.code.toLowerCase().trim()] = s;
+    codeMap[s.skuid.toLowerCase().trim()] = s;
+  });
+
+  const matched = [], unmatched = [], skipped = [];
+
+  xlsRows.forEach((row, idx) => {
+    const rawCode = String(row[codeCol] || '').trim();
+    if (!rawCode) { skipped.push(idx + 2); return; }
+
+    const sku = codeMap[rawCode.toLowerCase()];
+    if (!sku) { unmatched.push(rawCode); return; }
+
+    const v = parseFloat(String(row[qtyCol]).replace(/,/g, ''));
+    if (isNaN(v)) { skipped.push(idx + 2); return; }
+
+    const newQty = Math.max(0, Math.round(v));
+    matched.push({ sku, newQty, rawCode, oldQty: inventory[sku.id][loc] });
+  });
+
+  xlsPreviewData = matched;
+
+  // Stats
+  document.getElementById('xls-stats').innerHTML =
+    `<span class="istat istat-green">✅ ${matched.length} SKUs matched</span>` +
+    (unmatched.length ? `<span class="istat istat-amber">⚠️ ${unmatched.length} not found</span>` : '') +
+    (skipped.length   ? `<span class="istat istat-gray">⏭ ${skipped.length} skipped</span>` : '') +
+    `<span class="istat istat-gray">${xlsRows.length} rows in file</span>` +
+    `<span class="istat" style="background:var(--bbg);color:var(--blue)">→ ${NAMES[loc]} (${CODES[loc]})</span>`;
+
+  // Preview table
+  let rows_html = matched.slice(0, 60).map(m => {
+    const delta = m.newQty - m.oldQty;
+    const sign  = delta >= 0 ? '+' : '';
+    const dcolor = delta > 0 ? 'var(--gmid)' : delta < 0 ? 'var(--rmid)' : 'var(--muted)';
+    return `<tr>
+      <td class="mono" style="font-size:11px">${m.sku.skuid}</td>
+      <td class="mono" style="font-size:11px;color:var(--faint)">${m.rawCode}</td>
+      <td style="font-size:12px;font-weight:500">${m.sku.name.split(',').slice(-1)[0].trim()}</td>
+      <td class="num">
+        <span style="color:var(--muted);font-size:11px">${m.oldQty}</span>
+        <span style="margin:0 4px;color:var(--faint)">→</span>
+        <strong style="color:${dcolor}">${m.newQty}</strong>
+        <span style="font-size:10px;color:${dcolor}"> (${sign}${delta})</span>
+      </td>
+    </tr>`;
+  }).join('');
+
+  if (matched.length > 60) {
+    rows_html += `<tr><td colspan="4" style="text-align:center;color:var(--faint);font-size:12px;padding:10px">… and ${matched.length - 60} more rows</td></tr>`;
+  }
+  if (unmatched.length) {
+    rows_html += unmatched.slice(0, 8).map(c =>
+      `<tr style="background:#fffbf2">
+        <td colspan="2" class="mono" style="font-size:11px;color:var(--amber)">${c}</td>
+        <td style="font-size:12px;color:var(--amber)" colspan="2">⚠ Not found — check SKU code</td>
+      </tr>`
+    ).join('');
+  }
+  if (!rows_html) {
+    rows_html = `<tr><td colspan="4" class="empty">No usable rows found</td></tr>`;
+  }
+
+  document.getElementById('xls-preview-table').innerHTML = `
+    <table>
+      <thead><tr>
+        <th>SKU ID</th><th>SKU Code</th><th>SKU Name</th>
+        <th class="num">Stock at ${NAMES[loc]}</th>
+      </tr></thead>
+      <tbody>${rows_html}</tbody>
+    </table>`;
+
+  document.getElementById('xls-preview').style.display = 'block';
+  document.getElementById('xls-apply-btn').disabled = matched.length === 0;
+}
+
+function applyXlsImport() {
+  if (!xlsPreviewData.length) return;
+  const loc = xlsFacility;
+  xlsPreviewData.forEach(m => {
+    inventory[m.sku.id][loc] = m.newQty;
+    queueSync(m.sku.id, loc, m.newQty);
+  });
+  logStockUpdate(loc, xlsPreviewData.length, 'excel',
+    `Excel import: ${xlsPreviewData.length} SKUs updated`);
+  renderAll();
+  const msg = document.getElementById('xls-apply-msg');
+  msg.textContent = `✓ ${xlsPreviewData.length} SKUs updated at ${NAMES[loc]}`;
+  msg.style.opacity = 1;
+  setTimeout(() => msg.style.opacity = 0, 3000);
+  toast(`${xlsPreviewData.length} SKUs updated at ${NAMES[loc]} (${CODES[loc]})`);
+}
+
+function resetXlsImport() {
+  xlsRows = []; xlsPreviewData = [];
+  document.getElementById('xls-drop').style.display = 'block';
+  document.getElementById('xls-preview').style.display = 'none';
+  document.getElementById('xls-detected-cols').innerHTML = '';
+  document.getElementById('xls-apply-msg').style.opacity = 0;
+  document.getElementById('xls-file-input').value = '';
+}
+
+// ─────────────────────────────────────────────
+// INTER-STORE TRANSFER
+// ─────────────────────────────────────────────
+function populateTransferSkuSelect(){
+  const sel=document.getElementById('xfr-sku');
+  if(!sel)return;
+  sel.innerHTML=skus.map(s=>`<option value="${s.id}">${s.skuid} — ${s.name.split(',').slice(-1)[0].trim().substring(0,40)}</option>`).join('');
+}
+
+function refreshTransferPreview(){
+  const fromEl=document.getElementById('xfr-from');
+  const toEl=document.getElementById('xfr-to');
+  const skuEl=document.getElementById('xfr-sku');
+  const qtyEl=document.getElementById('xfr-qty');
+  const preview=document.getElementById('xfr-preview');
+  if(!fromEl||!toEl||!skuEl)return;
+
+  const from=fromEl.value, to=toEl.value;
+  const skuId=parseInt(skuEl.value);
+  const qty=parseInt(qtyEl.value)||0;
+
+  if(!skuId){preview.style.display='none';return;}
+  preview.style.display='block';
+
+  const fromStock=inventory[skuId][from]||0;
+  const toStock=inventory[skuId][to]||0;
+  const s=skus.find(sk=>sk.id===skuId);
+
+  const fromDoi=STORES.includes(from)&&consumption[skuId][from]>0
+    ?` · ${doiLabel(doi(skuId,from))} DOI`:'';
+  const toDoi=STORES.includes(to)&&consumption[skuId][to]>0
+    ?` · ${doiLabel(doi(skuId,to))} DOI`:'';
+
+  document.getElementById('xfr-prev-from-name').textContent=NAMES[from]+' ('+CODES[from]+')';
+  document.getElementById('xfr-prev-from-stock').textContent=fromStock+' units'+fromDoi;
+  document.getElementById('xfr-prev-to-name').textContent=NAMES[to]+' ('+CODES[to]+')';
+  document.getElementById('xfr-prev-to-stock').textContent=toStock+' units'+toDoi;
+  document.getElementById('xfr-prev-qty').textContent=qty>0?qty+'u':'—';
+
+  const warnEl=document.getElementById('xfr-warn');
+  if(from===to){
+    warnEl.textContent='⚠ Source and destination cannot be the same store.';
+    warnEl.style.display='block';
+  } else if(qty>fromStock){
+    warnEl.textContent=`⚠ Insufficient stock — ${NAMES[from]} only has ${fromStock} units of this SKU.`;
+    warnEl.style.display='block';
+  } else if(qty<=0){
+    warnEl.textContent=''; warnEl.style.display='none';
+  } else {
+    warnEl.textContent=''; warnEl.style.display='none';
+  }
+}
+
+function applyTransfer(){
+  const from=document.getElementById('xfr-from').value;
+  const to=document.getElementById('xfr-to').value;
+  const skuId=parseInt(document.getElementById('xfr-sku').value);
+  const qty=parseInt(document.getElementById('xfr-qty').value)||0;
+
+  if(!skuId){toast('Select a SKU');return;}
+  if(from===to){toast('Source and destination must be different');return;}
+  if(qty<=0){toast('Enter a quantity greater than 0');return;}
+  const fromStock=inventory[skuId][from]||0;
+  if(qty>fromStock){
+    toast(`Not enough stock — ${NAMES[from]} only has ${fromStock} units`);return;
+  }
+
+  const s=skus.find(sk=>sk.id===skuId);
+  inventory[skuId][from]-=qty;
+  inventory[skuId][to]+=qty;
+
+  logStockUpdate(from,1,'replenish',`Transferred ${qty}u of ${s?s.skuid:'SKU'} → ${NAMES[to]} (${CODES[to]})`);
+  logStockUpdate(to,1,'replenish',`Received ${qty}u of ${s?s.skuid:'SKU'} from ${NAMES[from]} (${CODES[from]})`);
+  queueSync(skuId,from,inventory[skuId][from],{facility:from,skusChanged:1,method:'replenish',summary:'Transferred '+qty+'u of '+(s?s.skuid:'SKU')+' → '+NAMES[to]});
+  queueSync(skuId,to,inventory[skuId][to],{facility:to,skusChanged:1,method:'replenish',summary:'Received '+qty+'u of '+(s?s.skuid:'SKU')+' from '+NAMES[from]});
+
+  renderAll();
+  populateTransferSkuSelect();
+  refreshTransferPreview();
+
+  const succ=document.getElementById('xfr-success');
+  succ.textContent=`✓ Transferred ${qty} units of ${s?s.skuid:'SKU'} from ${NAMES[from]} to ${NAMES[to]}`;
+  succ.style.opacity=1;
+  setTimeout(()=>succ.style.opacity=0,3000);
+  toast(`Transferred ${qty}u of ${s?s.skuid:'SKU'} → ${NAMES[to]}`);
+}
+
+populateTransferSkuSelect();
+renderAll();
+// ─────────────────────────────────────────────
+// TEST CONNECTION
+// ─────────────────────────────────────────────
+async function testConnection() {
+  if (!SYNC_ENABLED()) {
+    alert('No Sheet URL set.\n\nFind this line in index.html:\n  const SHEETS_URL = \'\';\nand paste your Apps Script /exec URL inside the quotes.');
+    return;
+  }
+
+  const url = SHEETS_URL.trim();
+
+  // Pre-checks
+  if (!url.includes('script.google.com')) {
+    alert('⚠️  Wrong URL\n\nYou pasted: ' + url + '\n\nThe SHEETS_URL must be your Apps Script deployment URL, which starts with:\nhttps://script.google.com/macros/s/...');
+    return;
+  }
+  if (url.endsWith('/dev')) {
+    alert('⚠️  Wrong URL ending\n\nChange /dev to /exec:\n' + url.replace('/dev','/exec'));
+    return;
+  }
+  if (url.includes('/a/macros/')) {
+    alert('⚠️  Workspace account URL\n\nThis script is deployed from a company Google account (contains /a/macros/).\n\nUse a personal Gmail account instead:\n1. Open sheets.google.com in personal Gmail\n2. Create new sheet → Extensions → Apps Script\n3. Paste GoogleAppsScript.js → Save\n4. Deploy → New Deployment → Web App → Anyone → Deploy\n5. Copy the new /exec URL');
+    return;
+  }
+  if (location.protocol === 'file:') {
+    alert('⚠️  Opening as local file\n\nYou must access the dashboard via https:// not file://\n\nUpload index.html to GitHub Pages, then open the GitHub Pages URL.');
+    return;
+  }
+
+  const btn = document.getElementById('test-conn-btn');
+  if (btn) btn.textContent = '↻ Testing…';
+  setSyncStatus('syncing');
+
+  // Step 1 — open URL raw in new tab so user can see exact response
+  const diagUrl = url + '?action=ping';
+
+  let json, fetchError;
+  try {
+    // JSONP — no CORS issues
+    json = await jsonpGet({ action: 'ping' });
+  } catch(e) {
+    fetchError = e.message;
+  }
+
+  if (btn) btn.textContent = '🔗 Test Sheet';
+
+  if (fetchError) {
+    setSyncStatus('error');
+    alert('❌  Connection failed\n\n' + fetchError +
+      '\n\nURL tested: ' + url +
+      '\n\nOpen this URL in a browser tab — if you see {"ok":true,...} ' +
+      'the script is fine. If it asks you to log in, the deployment access needs to be set to Anyone.');
+    return;
+  }
+
+  if (!json || !json.ok) {
+    setSyncStatus('error');
+    alert('❌  Script returned error\n\n' + (json && json.error ? json.error : 'Unknown') +
+      '\n\nTry re-pasting GoogleAppsScript.js and redeploying.');
+    return;
+  }
+
+  // Success
+  setSyncStatus('ok');
+  const d = json.data || {};
+  const empty = !d.skuCount || d.skuCount === 0;
+  if (empty) {
+    alert('⚠️  Connected but Sheet is empty\n\nSKUs found: ' + (d.skuCount||0) + '\n\nRun setupSheet() in Apps Script to load the data.');
+  } else {
+    alert('✅  Everything working!\n\nSKUs in sheet: ' + d.skuCount + '\nStock rows: ' + d.stkCount + (d.lastWrite ? '\nLast write: ' + d.lastWrite : '') + '\n\nReads and writes are confirmed.');
+  }
+}
+
+renderAll();
+loadFromSheet();
+</script>
+</body>
+</html>
