@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>Inventory Command Center</title>
+<title>Inventory Anchor</title>
 <link href="https://fonts.googleapis.com/css2?family=DM+Sans:wght@400;500;600&family=DM+Mono:wght@400;500&display=swap" rel="stylesheet">
 <style>
 :root{
@@ -225,6 +225,13 @@ tr:hover td{background:#fafaf8}
 .fac-toggle.active-fac .fac-dot{background:var(--gmid)}
 .fac-toggle.inactive-fac .fac-dot{background:var(--rmid)}
 
+
+/* SORT */
+th.sortable{cursor:pointer;user-select:none;white-space:nowrap}
+th.sortable:hover{color:var(--text);background:var(--border)}
+th.sortable::after{content:' ↕';opacity:.35;font-size:10px}
+th.sort-asc::after{content:' ↑';opacity:1;color:var(--bmid)}
+th.sort-desc::after{content:' ↓';opacity:1;color:var(--bmid)}
 ::-webkit-scrollbar{width:5px;height:5px}
 ::-webkit-scrollbar-track{background:transparent}
 ::-webkit-scrollbar-thumb{background:rgba(0,0,0,.15);border-radius:3px}
@@ -240,7 +247,7 @@ tr:hover td{background:#fafaf8}
     <div class="logo-icon">
       <svg width="20" height="20" fill="none" stroke="#18181e" stroke-width="2" viewBox="0 0 24 24"><path d="M3 9l9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"/><polyline points="9 22 9 12 15 12 15 22"/></svg>
     </div>
-    <div class="logo-title">Inventory HQ</div>
+    <div class="logo-title">Inventory Anchor</div>
     <div class="logo-sub">Gurgaon WH · Delhi City (GGN · LJP · NOI)</div>
   </div>
 
@@ -286,7 +293,7 @@ tr:hover td{background:#fafaf8}
 <div class="topbar">
   <div style="flex:1">
     <div class="topbar-title" id="topbar-title">Dashboard</div>
-    <div class="topbar-sub" id="topbar-sub">Gurgaon Warehouse · Delhi City · 298 SKUs</div>
+    <div class="topbar-sub" id="topbar-sub">Delhi NCR · 298 SKUs</div>
   </div>
   <span id="sync-status" style="font-size:11px;font-weight:500;margin-right:4px"></span>
   <span style="font-size:12px;color:var(--faint)" id="last-updated"></span>
@@ -305,6 +312,31 @@ tr:hover td{background:#fafaf8}
       <div class="card-title">
         <svg width="15" height="15" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path d="M10.29 3.86L1.82 18a2 2 0 0 0 1.71 3h16.94a2 2 0 0 0 1.71-3L13.71 3.86a2 2 0 0 0-3.42 0z"/><line x1="12" y1="9" x2="12" y2="13"/><line x1="12" y1="17" x2="12.01" y2="17"/></svg>
         Active Alerts
+      </div>
+      <!-- Alert filters -->
+      <div style="display:flex;gap:6px;margin-bottom:.75rem;flex-wrap:wrap">
+        <select id="alert-filter-city" onchange="renderAlerts()" style="font-family:inherit;font-size:12px;padding:4px 8px;border-radius:var(--rad);border:1px solid var(--border);background:var(--surface);color:var(--text)">
+          <option value="all">All Cities</option>
+          <option value="Delhi NCR">Delhi NCR</option>
+        </select>
+        <select id="alert-filter-fac" onchange="renderAlerts()" style="font-family:inherit;font-size:12px;padding:4px 8px;border-radius:var(--rad);border:1px solid var(--border);background:var(--surface);color:var(--text)">
+          <option value="all">All Facilities</option>
+          <option value="WH">Gurgaon Warehouse</option>
+          <option value="DS1">Gurgaon</option>
+          <option value="DS2">Lajpat Nagar</option>
+          <option value="DS3">Noida</option>
+        </select>
+        <select id="alert-filter-cat" onchange="renderAlerts()" style="font-family:inherit;font-size:12px;padding:4px 8px;border-radius:var(--rad);border:1px solid var(--border);background:var(--surface);color:var(--text)">
+          <option value="all">All Categories</option>
+          <option value="Washing Machine">Washing Machine</option>
+          <option value="Microwave">Microwave</option>
+          <option value="Refrigerator">Refrigerator</option>
+        </select>
+        <select id="alert-filter-status" onchange="renderAlerts()" style="font-family:inherit;font-size:12px;padding:4px 8px;border-radius:var(--rad);border:1px solid var(--border);background:var(--surface);color:var(--text)">
+          <option value="all">Critical &amp; Warning</option>
+          <option value="crit">Critical only</option>
+          <option value="warn">Warning only</option>
+        </select>
       </div>
       <div id="alerts-list"></div>
     </div>
@@ -364,7 +396,7 @@ tr:hover td{background:#fafaf8}
     <select id="inv-city" onchange="onCityFilter()">
       <option value="all">All Cities</option>
       <option value="Gurgaon">Gurgaon</option>
-      <option value="Delhi">Delhi</option>
+      <option value="Delhi NCR">Delhi NCR</option>
     </select>
     <select id="inv-store" onchange="renderInventory()">
       <option value="all">All Facilities</option>
@@ -523,7 +555,7 @@ tr:hover td{background:#fafaf8}
     <select id="reo-city" onchange="onReoCityFilter()">
       <option value="all">All Cities</option>
       <option value="Gurgaon">Gurgaon</option>
-      <option value="Delhi">Delhi</option>
+      <option value="Delhi NCR">Delhi NCR</option>
     </select>
     <select id="reo-filter" onchange="renderReorder()">
       <option value="all">All Stores</option>
@@ -686,9 +718,11 @@ tr:hover td{background:#fafaf8}
 // ─────────────────────────────────────────────
 const STORES=['DS1','DS2','DS3'],LOCS=['WH','DS1','DS2','DS3'];
 const NAMES={WH:'Gurgaon Warehouse',DS1:'Gurgaon',DS2:'Lajpat Nagar',DS3:'Noida'};
-const CITIES={WH:'Gurgaon',DS1:'Delhi',DS2:'Delhi',DS3:'Delhi'};
+const CITIES={WH:'Delhi NCR',DS1:'Delhi NCR',DS2:'Delhi NCR',DS3:'Delhi NCR'};
 const FACILITY_TYPE={WH:'warehouse',DS1:'dark-store',DS2:'dark-store',DS3:'dark-store'};
 const facilityActive={WH:true,DS1:true,DS2:true,DS3:true};
+let invSort={col:null,dir:1};   // inventory table sort
+let facSort={col:null,dir:1};   // facility view sort
 const CODES={WH:'HH-WH-APP-GGN',DS1:'HH-DS-APP-GGN',DS2:'HH-DS-APP-LJP',DS3:'HH-DS-APP-NOI'};
 
 // ─── GOOGLE SHEETS SYNC CONFIG ───────────────────────────
@@ -1908,21 +1942,75 @@ function renderMetrics(){
 }
 
 function renderAlerts(){
-  const al=getAlerts().slice(0,7);
-  if(!al.length){document.getElementById('alerts-list').innerHTML='<div class="empty">✅ All stores healthy</div>';return;}
-  document.getElementById('alerts-list').innerHTML=al.map(a=>`
-    <div class="alert-item">
-      <div class="alert-icon ${a.status==='crit'?'ai-red':'ai-amber'}">
-        <svg width="14" height="14" fill="none" stroke="${a.status==='crit'?'var(--rmid)':'var(--amid)'}" stroke-width="2" viewBox="0 0 24 24">
-          ${a.status==='crit'?'<circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="12"/><line x1="12" y1="16" x2="12.01" y2="16"/>':'<path d="M10.29 3.86L1.82 18a2 2 0 0 0 1.71 3h16.94a2 2 0 0 0 1.71-3L13.71 3.86a2 2 0 0 0-3.42 0z"/><line x1="12" y1="9" x2="12" y2="13"/>'}</svg>
+  const cityF   = (document.getElementById('alert-filter-city')   || {value:'all'}).value;
+  const facF    = (document.getElementById('alert-filter-fac')    || {value:'all'}).value;
+  const catF    = (document.getElementById('alert-filter-cat')    || {value:'all'}).value;
+  const statusF = (document.getElementById('alert-filter-status') || {value:'all'}).value;
+
+  let all = getAlerts();
+
+  // Apply filters
+  if (cityF   !== 'all') all = all.filter(a => CITIES[a.store] === cityF);
+  if (facF    !== 'all') all = all.filter(a => a.store === facF);
+  if (catF    !== 'all') all = all.filter(a => a.sku.cat === catF);
+  if (statusF !== 'all') all = all.filter(a => a.status === statusF);
+
+  if (!all.length) {
+    document.getElementById('alerts-list').innerHTML =
+      '<div class="empty">✅ No alerts match the selected filters</div>';
+    return;
+  }
+
+  // Group by SKU — one card per SKU, list all affected facilities within it
+  const bySkuId = {};
+  all.forEach(a => {
+    if (!bySkuId[a.sku.id]) bySkuId[a.sku.id] = { sku: a.sku, entries: [] };
+    bySkuId[a.sku.id].entries.push(a);
+  });
+
+  // Sort SKU groups: critical-first, then by worst DOI
+  const groups = Object.values(bySkuId).sort((a, b) => {
+    const aWorst = a.entries.some(e => e.status === 'crit') ? 0 : 1;
+    const bWorst = b.entries.some(e => e.status === 'crit') ? 0 : 1;
+    if (aWorst !== bWorst) return aWorst - bWorst;
+    const aDoi = Math.min(...a.entries.map(e => e.doi));
+    const bDoi = Math.min(...b.entries.map(e => e.doi));
+    return aDoi - bDoi;
+  });
+
+  document.getElementById('alerts-list').innerHTML = groups.slice(0, 12).map(g => {
+    const hasCrit = g.entries.some(e => e.status === 'crit');
+    const worstStatus = hasCrit ? 'crit' : 'warn';
+    const iconColor = hasCrit ? 'var(--rmid)' : 'var(--amid)';
+    const iconPath = hasCrit
+      ? '<circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="12"/><line x1="12" y1="16" x2="12.01" y2="16"/>'
+      : '<path d="M10.29 3.86L1.82 18a2 2 0 0 0 1.71 3h16.94a2 2 0 0 0 1.71-3L13.71 3.86a2 2 0 0 0-3.42 0z"/><line x1="12" y1="9" x2="12" y2="13"/>';
+
+    // Facility tags within this SKU
+    const facTags = g.entries.map(e => {
+      const city = CITIES[e.store];
+      return `<span class="badge badge-${e.status}" style="font-size:10px;padding:1px 7px;margin-right:3px">
+        ${NAMES[e.store]}
+        <span style="font-size:9px;opacity:.75;margin-left:2px">${doiLabel(e.doi)}</span>
+      </span>`;
+    }).join('');
+
+    // Unique cities
+    const cities = [...new Set(g.entries.map(e => CITIES[e.store]))].join(', ');
+
+    return `<div class="alert-item">
+      <div class="alert-icon ${worstStatus === 'crit' ? 'ai-red' : 'ai-amber'}">
+        <svg width="14" height="14" fill="none" stroke="${iconColor}" stroke-width="2" viewBox="0 0 24 24">${iconPath}</svg>
       </div>
-      <div class="alert-body">
-        <div class="alert-title">${a.sku.name.split(',')[0]} · ${NAMES[a.store]}</div>
-        <div class="alert-desc" style="font-family:'DM Mono',monospace;font-size:11px;color:var(--faint);margin-bottom:2px">${a.sku.code}</div>
-        <div class="alert-desc">${a.stock} units · DOI ${doiLabel(a.doi)} · ${a.cons}/day</div>
+      <div class="alert-body" style="min-width:0">
+        <div class="alert-title" style="font-size:13px;font-weight:500">${g.sku.name.split(',').slice(-1)[0].trim()}</div>
+        <div style="font-family:'DM Mono',monospace;font-size:10px;color:var(--faint);margin:2px 0 5px">${g.sku.code} · ${g.sku.cat.replace('Washing Machine','WM')} · ${cities}</div>
+        <div style="display:flex;flex-wrap:wrap;gap:3px">${facTags}</div>
       </div>
-      <span class="badge badge-${a.status}">${a.status==='crit'?'Critical':'Warning'}</span>
-    </div>`).join('');
+    </div>`;
+  }).join('') + (groups.length > 12
+    ? `<div style="font-size:12px;color:var(--faint);padding:8px 0;text-align:center">+${groups.length-12} more SKUs with alerts</div>`
+    : '');
 }
 
 function renderFacilityHealth(){
@@ -1958,6 +2046,7 @@ function renderFacilityHealth(){
 // ─────────────────────────────────────────────
 function switchFacility(loc,el){
   activeFacility=loc;
+  facSort={col:null,dir:1};
   document.querySelectorAll('#facility-tabs .ftab').forEach(b=>b.classList.remove('active'));
   if(el)el.classList.add('active');
   renderFacilityStats();
@@ -2005,13 +2094,19 @@ function renderFacilityTable(){
 
   document.getElementById('fac-count').textContent=rows.length+' SKUs';
 
-  const doiCol=isStore?`<th class="num">DOI (days)</th><th>Status</th>`:'';
+  // Apply sort before rendering
+  if (facSort.col==='stock') rows=applySort(rows,s=>inventory[s.id][loc]||0,facSort.dir);
+  else if (facSort.col==='doi'&&isStore) rows=applySort(rows,s=>{const d=doi(s.id,loc);return d===Infinity?9999:d;},facSort.dir);
+  else if (facSort.col==='name') rows=applySort(rows,s=>s.name.split(',').slice(-1)[0].trim(),facSort.dir);
+
+  const doiCol=isStore?`<th class="num ${sortClass(facSort,'doi')}" onclick="toggleSort(facSort,'doi',renderFacilityTable)">DOI (days)</th><th>Status</th>`:'';
   document.getElementById('facility-table').innerHTML=`
     <table>
       <thead><tr>
-        <th>SKU Code</th><th>SKU Name</th><th>Category</th>
-        <th class="num">Stock (units)</th>
-        ${isStore?`<th class="num">Rate (u/day)</th>`:'<th class="num">Covers DS1 (days)</th>'}
+        <th class="${sortClass(facSort,'name')}" onclick="toggleSort(facSort,'name',renderFacilityTable)">SKU Code / Name</th>
+        <th>Category</th>
+        <th class="num ${sortClass(facSort,'stock')}" onclick="toggleSort(facSort,'stock',renderFacilityTable)">Stock</th>
+        ${isStore?`<th class="num">Rate (u/day)</th>`:'<th class="num">WH Cover (days)</th>'}
         ${doiCol}
       </tr></thead>
       <tbody>
@@ -2022,7 +2117,7 @@ function renderFacilityTable(){
           const rate=isStore?(consumption[s.id][loc]||0):null;
           const coversDays=!isStore&&rate?Math.round(stock/(consumption[s.id]['DS1']||1)*10)/10:'—';
           return`<tr>
-            <td class="mono">${s.code}</td>
+            <td class="mono" style="font-size:11px">${s.code}</td>
             <td style="font-weight:500;max-width:280px">${s.name.split(',').slice(-1)[0].trim()}</td>
             <td><span class="badge badge-info" style="font-size:10px">${s.cat.replace('Washing Machine','WM')}</span></td>
             <td class="num" style="font-weight:600">${stock.toLocaleString()}</td>
@@ -2056,11 +2151,22 @@ function renderInventory(){
     return true;
   });
   document.getElementById('inv-count').textContent=rows.length+' SKUs';
+  const invSortCol = invSort.col;
+  const invSortDir = invSort.dir;
+  if (invSortCol === 'name')   rows = applySort(rows, s => s.name.split(',').slice(-1)[0].trim(), invSortDir);
+  else if (invSortCol === 'cat') rows = applySort(rows, s => s.cat, invSortDir);
+  else if (invSortCol === 'wh')  rows = applySort(rows, s => inventory[s.id].WH, invSortDir);
+  else if (invSortCol === 'doi') rows = applySort(rows, s => {
+    const d = Math.min(...visStores.map(st => { const v = doi(s.id,st); return v===Infinity?9999:v; }));
+    return d;
+  }, invSortDir);
   document.getElementById('inventory-table').innerHTML=`
     <table>
       <thead><tr>
-        <th>SKU</th><th>Category</th><th class="num">WH</th>
-        ${visStores.map(st=>`<th class="num">${NAMES[st]}</th><th class="num">DOI</th>`).join('')}
+        <th class="${sortClass(invSort,'name')}" onclick="toggleSort(invSort,'name',renderInventory)">SKU</th>
+        <th class="${sortClass(invSort,'cat')}"  onclick="toggleSort(invSort,'cat',renderInventory)">Category</th>
+        <th class="num ${sortClass(invSort,'wh')}" onclick="toggleSort(invSort,'wh',renderInventory)">WH</th>
+        ${visStores.map(st=>`<th class="num">${NAMES[st]}</th><th class="num ${sortClass(invSort,'doi')}" onclick="toggleSort(invSort,'doi',renderInventory)">DOI</th>`).join('')}
         <th>Status</th>
       </tr></thead>
       <tbody>
@@ -2353,7 +2459,7 @@ function renderConsumptionTable(){
           const r=consumption[s.id];
           const avg=Math.round((r.DS1+r.DS2+r.DS3)/3*1000)/1000;
           return`<tr>
-            <td class="mono">${s.code}</td>
+            <td class="mono" style="font-size:11px">${s.code}</td>
             <td style="font-size:12px;font-weight:500">${s.name.split(',').slice(-1)[0].trim()}</td>
             <td><span class="badge badge-info" style="font-size:10px">${s.cat.replace('Washing Machine','WM')}</span></td>
             <td class="cons-cell">${r.DS1}</td>
@@ -2379,7 +2485,7 @@ function renderSkuManage(){
         ${skus.map(s=>{
           const total=LOCS.reduce((a,l)=>a+(inventory[s.id][l]||0),0);
           return`<tr>
-            <td class="mono">${s.code}</td>
+            <td class="mono" style="font-size:11px">${s.code}</td>
             <td style="font-weight:500;font-size:12px">${s.name.split(',').slice(-1)[0].trim()}</td>
             <td><span class="badge badge-info" style="font-size:10px">${s.cat.replace('Washing Machine','WM')}</span></td>
             <td class="num">${s.threshold}d</td>
@@ -2843,6 +2949,26 @@ async function testConnection() {
   } else {
     alert('✅  Everything working!\n\nSKUs in sheet: ' + d.skuCount + '\nStock rows: ' + d.stkCount + (d.lastWrite ? '\nLast write: ' + d.lastWrite : '') + '\n\nReads and writes are confirmed.');
   }
+}
+
+// ─── Sort helpers ──────────────────────────────────────────
+function applySort(rows, col, dir) {
+  if (!col) return rows;
+  return [...rows].sort((a, b) => {
+    let va = col(a), vb = col(b);
+    if (typeof va === 'string') va = va.toLowerCase();
+    if (typeof vb === 'string') vb = vb.toLowerCase();
+    return va < vb ? -dir : va > vb ? dir : 0;
+  });
+}
+function toggleSort(state, col, render) {
+  if (state.col === col) state.dir *= -1;
+  else { state.col = col; state.dir = 1; }
+  render();
+}
+function sortClass(state, col) {
+  if (state.col !== col) return 'sortable';
+  return 'sortable ' + (state.dir === 1 ? 'sort-asc' : 'sort-desc');
 }
 
 // ─────────────────────────────────────────────
