@@ -232,6 +232,15 @@ th.sortable:hover{color:var(--text);background:var(--border)}
 th.sortable::after{content:' ↕';opacity:.35;font-size:10px}
 th.sort-asc::after{content:' ↑';opacity:1;color:var(--bmid)}
 th.sort-desc::after{content:' ↓';opacity:1;color:var(--bmid)}
+
+/* GO TO TOP */
+.go-top{position:fixed;bottom:1.5rem;left:50%;transform:translateX(-50%);
+  background:var(--text);color:var(--surface);border:none;border-radius:20px;
+  padding:6px 16px;font-size:12px;font-weight:500;font-family:inherit;
+  cursor:pointer;opacity:0;pointer-events:none;
+  transition:opacity .2s;z-index:100;display:flex;align-items:center;gap:6px}
+.go-top.visible{opacity:1;pointer-events:auto}
+.go-top:hover{opacity:.85}
 ::-webkit-scrollbar{width:5px;height:5px}
 ::-webkit-scrollbar-track{background:transparent}
 ::-webkit-scrollbar-thumb{background:rgba(0,0,0,.15);border-radius:3px}
@@ -279,7 +288,7 @@ th.sort-desc::after{content:' ↓';opacity:1;color:var(--bmid)}
 
   <div class="nav-section">Settings</div>
   <button class="nav-btn" onclick="switchPage('consumption',this)" title="Consumption Rates">
-    <svg fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><rect x="3" y="11" width="18" height="11" rx="2"/><path d="M7 11V7a5 5 0 0 1 10 0v4"/></svg>
+    <svg fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><polyline points="22 12 18 12 15 21 9 3 6 12 2 12"/></svg>
     Consumption Rates
   </button>
   <button class="nav-btn" onclick="switchPage('skus',this)" title="Manage SKUs">
@@ -301,7 +310,7 @@ th.sort-desc::after{content:' ↓';opacity:1;color:var(--bmid)}
   <button class="btn btn-sm btn-primary" onclick="openAddSku()">+ Add SKU</button>
 </div>
 
-<div class="content">
+<div class="content" id="main-content">
 
 <!-- ── DASHBOARD ── -->
 <div class="page active" id="page-dashboard">
@@ -633,37 +642,21 @@ th.sort-desc::after{content:' ↓';opacity:1;color:var(--bmid)}
   </div>
 </div>
 
-<!-- ── CONSUMPTION (password-protected) ── -->
+<!-- ── CONSUMPTION ── -->
 <div class="page" id="page-consumption">
-  <div class="pw-gate" id="cons-pw-gate">
-    <div class="pw-box">
-      <div style="font-size:32px;margin-bottom:8px">🔒</div>
-      <h3>Consumption Rates</h3>
-      <p>This section contains pilot-derived consumption data.<br>Enter the admin password to view.</p>
-      <input type="password" class="pw-input" id="cons-pw-input" placeholder="••••••••" onkeydown="if(event.key==='Enter')checkPassword()">
-      <div class="pw-error" id="cons-pw-error"></div>
-      <button class="btn btn-primary" style="width:100%" onclick="checkPassword()">Unlock</button>
-      <p style="font-size:11px;color:var(--faint);margin-top:12px">View-only. Contact admin to update rates.</p>
-    </div>
+  <div style="margin-bottom:1rem">
+    <p style="font-size:13px;color:var(--muted)">📊 View-only · 298 SKUs · Rates derived from historical orders data · DS2 & DS3 mirror DS1 baseline</p>
   </div>
-  <div class="cons-table-wrap" id="cons-table-wrap">
-    <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:1rem">
-      <div>
-        <p style="font-size:13px;color:var(--muted)">📊 View-only · 298 SKUs · Rates derived from historical orders data · DS2 & DS3 mirror DS1 baseline</p>
-      </div>
-      <button class="btn btn-sm" onclick="lockConsumption()">🔒 Lock</button>
-    </div>
-    <div class="filter-row" style="margin-bottom:.75rem">
-      <input type="text" id="cons-search" placeholder="Search SKU…" oninput="renderConsumptionTable()">
-      <select id="cons-cat" onchange="renderConsumptionTable()">
-        <option value="all">All Categories</option>
-        <option value="Washing Machine">Washing Machine</option>
-        <option value="Microwave">Microwave</option>
-        <option value="Refrigerator">Refrigerator</option>
-      </select>
-    </div>
-    <div class="tbl-wrap" id="cons-table"></div>
+  <div class="filter-row" style="margin-bottom:.75rem">
+    <input type="text" id="cons-search" placeholder="Search SKU…" oninput="renderConsumptionTable()">
+    <select id="cons-cat" onchange="renderConsumptionTable()">
+      <option value="all">All Categories</option>
+      <option value="Washing Machine">Washing Machine</option>
+      <option value="Microwave">Microwave</option>
+      <option value="Refrigerator">Refrigerator</option>
+    </select>
   </div>
+  <div class="tbl-wrap" id="cons-table"></div>
 </div>
 
 <!-- ── MANAGE SKUs ── -->
@@ -676,6 +669,10 @@ th.sort-desc::after{content:' ↓';opacity:1;color:var(--bmid)}
 
 </div><!-- .content -->
 </div><!-- .main -->
+<button class="go-top" id="go-top-btn" onclick="document.getElementById('main-content').scrollTo({top:0,behavior:'smooth'})">
+  <svg width="12" height="12" fill="none" stroke="currentColor" stroke-width="2.5" viewBox="0 0 24 24"><polyline points="18 15 12 9 6 15"/></svg>
+  Back to top
+</button>
 </div><!-- .shell -->
 
 <!-- ADD SKU MODAL -->
@@ -962,7 +959,7 @@ function renderFacilityUpdateLog(){
     </div>`).join('');
 }
 const CONS_PASSWORD='UC@Inventory2026';
-let consUnlocked=false;
+let consUnlocked=true;
 let activeFacility='WH';
 let updateFacility='WH';
 let editingSkuId=null;
@@ -2099,11 +2096,12 @@ function renderFacilityTable(){
   else if (facSort.col==='doi'&&isStore) rows=applySort(rows,s=>{const d=doi(s.id,loc);return d===Infinity?9999:d;},facSort.dir);
   else if (facSort.col==='name') rows=applySort(rows,s=>s.name.split(',').slice(-1)[0].trim(),facSort.dir);
 
-  const doiCol=isStore?`<th class="num ${sortClass(facSort,'doi')}" onclick="toggleSort(facSort,'doi',renderFacilityTable)">DOI (days)</th><th>Status</th>`:'';
+  const doiCol=isStore?`<th class="num ${sortClass(facSort,'doi')}" onclick="toggleSort(facSort,'doi',renderFacilityTable)">DOI</th><th>Status</th>`:'';
   document.getElementById('facility-table').innerHTML=`
     <table>
       <thead><tr>
-        <th class="${sortClass(facSort,'name')}" onclick="toggleSort(facSort,'name',renderFacilityTable)">SKU Code / Name</th>
+        <th class="${sortClass(facSort,'name')}" onclick="toggleSort(facSort,'name',renderFacilityTable)" style="width:140px">SKU Code</th>
+        <th>SKU Name</th>
         <th>Category</th>
         <th class="num ${sortClass(facSort,'stock')}" onclick="toggleSort(facSort,'stock',renderFacilityTable)">Stock</th>
         ${isStore?`<th class="num">Rate (u/day)</th>`:'<th class="num">WH Cover (days)</th>'}
@@ -2117,8 +2115,8 @@ function renderFacilityTable(){
           const rate=isStore?(consumption[s.id][loc]||0):null;
           const coversDays=!isStore&&rate?Math.round(stock/(consumption[s.id]['DS1']||1)*10)/10:'—';
           return`<tr>
-            <td class="mono" style="font-size:11px">${s.code}</td>
-            <td style="font-weight:500;max-width:280px">${s.name.split(',').slice(-1)[0].trim()}</td>
+            <td class="mono" style="font-size:11px;color:var(--faint)">${s.code}</td>
+            <td style="font-weight:500">${s.name.split(',').slice(-1)[0].trim()}</td>
             <td><span class="badge badge-info" style="font-size:10px">${s.cat.replace('Washing Machine','WM')}</span></td>
             <td class="num" style="font-weight:600">${stock.toLocaleString()}</td>
             ${isStore?`<td class="num" style="color:var(--blue)">${rate}</td>`:`<td class="num" style="color:var(--muted)">${coversDays}</td>`}
@@ -2436,7 +2434,6 @@ function lockConsumption(){
 }
 
 function renderConsumptionTable(){
-  if(!consUnlocked)return;
   const search=(document.getElementById('cons-search').value||'').toLowerCase();
   const catF=document.getElementById('cons-cat').value;
   const rows=skus.filter(s=>{
@@ -2480,22 +2477,22 @@ function renderConsumptionTable(){
 function renderSkuManage(){
   document.getElementById('sku-manage-table').innerHTML=`
     <table>
-      <thead><tr><th>SKU Code</th><th>SKU Name</th><th>Category</th><th class="num">Threshold</th><th class="num">Total Stock</th><th>Actions</th></tr></thead>
+      <thead><tr>
+        <th style="width:160px">SKU Code</th>
+        <th>SKU Name</th>
+        <th style="width:140px">Category</th>
+        <th style="width:130px">Actions</th>
+      </tr></thead>
       <tbody>
-        ${skus.map(s=>{
-          const total=LOCS.reduce((a,l)=>a+(inventory[s.id][l]||0),0);
-          return`<tr>
-            <td class="mono" style="font-size:11px">${s.code}</td>
-            <td style="font-weight:500;font-size:12px">${s.name.split(',').slice(-1)[0].trim()}</td>
-            <td><span class="badge badge-info" style="font-size:10px">${s.cat.replace('Washing Machine','WM')}</span></td>
-            <td class="num">${s.threshold}d</td>
-            <td class="num">${total}</td>
-            <td>
-              <button class="btn btn-sm" onclick="editSku(${s.id})" style="margin-right:4px">Edit</button>
-              <button class="btn btn-sm" style="color:var(--red);border-color:var(--rmid)" onclick="deleteSku(${s.id})">Delete</button>
-            </td>
-          </tr>`;
-        }).join('')}
+        ${skus.map(s=>`<tr>
+          <td class="mono" style="font-size:11px;color:var(--faint)">${s.code}</td>
+          <td style="font-weight:500;font-size:13px">${s.name.split(',').slice(-1)[0].trim()}</td>
+          <td><span class="badge badge-info" style="font-size:10px">${s.cat.replace('Washing Machine','WM')}</span></td>
+          <td>
+            <button class="btn btn-sm" onclick="editSku(${s.id})" style="margin-right:4px">Edit</button>
+            <button class="btn btn-sm" style="color:var(--red);border-color:var(--rmid)" onclick="deleteSku(${s.id})">Delete</button>
+          </td>
+        </tr>`).join('')}
       </tbody>
     </table>
   `;
@@ -2585,7 +2582,7 @@ function renderAll(){
   renderFacilityStats();renderFacilityTable();renderFacilityUpdateLog();
   renderInventory();renderUpdateTable();renderReorder();
   renderSkuManage();
-  if(consUnlocked)renderConsumptionTable();
+  renderConsumptionTable();
   populateSingleSkuSelect();
   updateNavBadges();
   document.getElementById('last-updated').textContent='Updated '+new Date().toLocaleTimeString([],{hour:'2-digit',minute:'2-digit'});
@@ -3015,6 +3012,18 @@ function onReoCityFilter() {
 
 renderAll();
 loadFromSheet();
+
+// Go to top
+(function(){
+  const content = document.getElementById('main-content');
+  const btn = document.getElementById('go-top-btn');
+  if (!content || !btn) return;
+  content.addEventListener('scroll', function() {
+    if (content.scrollTop > 300) btn.classList.add('visible');
+    else btn.classList.remove('visible');
+  });
+})();
+
 </script>
 </body>
 </html>
