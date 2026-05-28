@@ -255,6 +255,76 @@ th.sort-desc::after{content:' ↓';opacity:1;color:var(--bmid)}
 ::-webkit-scrollbar-track{background:transparent}
 ::-webkit-scrollbar-thumb{background:rgba(0,0,0,.15);border-radius:3px}
 
+
+/* ── MOBILE SIDEBAR OVERLAY ── */
+.hamburger-btn {
+  display: none;
+  background: none;
+  border: none;
+  color: var(--text);
+  cursor: pointer;
+  padding: 4px 6px;
+  border-radius: var(--rad);
+  flex-shrink: 0;
+  margin-right: 6px;
+}
+.hamburger-btn:hover { background: var(--surface2); }
+
+.mobile-backdrop {
+  display: none;
+  position: fixed;
+  inset: 0;
+  background: rgba(0,0,0,.55);
+  z-index: 150;
+}
+.mobile-backdrop.open { display: block; }
+
+@media (max-width: 768px) {
+  .hamburger-btn { display: flex; align-items: center; justify-content: center; }
+
+  /* Sidebar becomes a slide-in overlay — stays hidden until hamburger tapped */
+  .sidebar {
+    position: fixed !important;
+    top: 0; left: 0;
+    height: 100vh !important;
+    width: 240px !important;
+    z-index: 200;
+    flex-direction: column !important;
+    overflow-y: auto !important;
+    overflow-x: hidden !important;
+    transform: translateX(-100%);
+    transition: transform .25s ease;
+    order: unset !important;
+    border-top: none !important;
+    border-right: 1px solid rgba(255,255,255,.1) !important;
+    flex-wrap: nowrap !important;
+    scrollbar-width: none;
+  }
+  .sidebar.open { transform: translateX(0); }
+  .sidebar::-webkit-scrollbar { display: none; }
+
+  /* Restore logo and nav sections inside the overlay */
+  .logo-wrap   { display: flex !important; flex-direction: column; }
+  .nav-section { display: block !important; }
+
+  /* Nav buttons back to vertical */
+  .nav-btn {
+    flex-direction: row !important;
+    align-items: center !important;
+    justify-content: flex-start !important;
+    gap: 9px !important;
+    padding: 9px 14px !important;
+    font-size: 13px !important;
+    border-radius: 7px !important;
+    min-width: unset !important;
+    white-space: normal !important;
+  }
+  .nav-btn svg { width: 15px !important; height: 15px !important; }
+
+  /* Main content takes full screen */
+  .main { width: 100%; }
+}
+
 /* ═══════════════════════════════════════════
    MOBILE RESPONSIVE — 768px and below
    ═══════════════════════════════════════════ */
@@ -425,6 +495,7 @@ th.sort-desc::after{content:' ↓';opacity:1;color:var(--bmid)}
 <body>
 
 <div class="shell">
+<div class="mobile-backdrop" id="mobile-backdrop" onclick="closeMobileSidebar()"></div>
 <!-- ===== SIDEBAR ===== -->
 <nav class="sidebar">
   <div class="logo-wrap" style="cursor:pointer" onclick="switchPage('dashboard',document.querySelector('.nav-btn'))" title="Go to Dashboard">
@@ -486,6 +557,14 @@ th.sort-desc::after{content:' ↓';opacity:1;color:var(--bmid)}
 <!-- ===== MAIN ===== -->
 <div class="main">
 <div class="topbar">
+  <!-- Hamburger — mobile only -->
+  <button class="hamburger-btn" id="hamburger-btn" onclick="toggleMobileSidebar()" aria-label="Menu">
+    <svg width="20" height="20" fill="none" stroke="currentColor" stroke-width="2.5" viewBox="0 0 24 24">
+      <line x1="3" y1="6"  x2="21" y2="6"/>
+      <line x1="3" y1="12" x2="21" y2="12"/>
+      <line x1="3" y1="18" x2="21" y2="18"/>
+    </svg>
+  </button>
   <div style="flex:1">
     <div class="topbar-title" id="topbar-title">Dashboard</div>
     <div class="topbar-sub" id="topbar-sub">Delhi NCR · 298 SKUs</div>
@@ -3418,42 +3497,47 @@ async function saveFacilityStatus() {
 }
 
 async function loadFacilityStatus() {
-  // 1. Apply localStorage cache immediately (fast, works offline)
+  // Sheet is ALWAYS the source of truth for facility active state.
+  // localStorage is only used when Sheet is unavailable (offline/no URL).
+
+  if (SYNC_ENABLED()) {
+    // Try Sheet first — it's shared across all devices
+    try {
+      const json = await sheetGet({ action: 'loadSettings' });
+      if (json && json.ok && json.data) {
+        if (json.data.facilityActive) {
+          // Apply Sheet values — overrides anything local
+          Object.entries(json.data.facilityActive).forEach(([k,v]) => { facilityActive[k] = (v === true || v === 'true'); });
+        }
+        if (json.data.customFacilities && json.data.customFacilities.length) {
+          json.data.customFacilities.forEach(f => {
+            if (!LOCS.includes(f.key)) addFacilityToApp(f.key,f.name,f.code,f.city,f.type,false);
+          });
+        }
+        // Update localStorage to match Sheet (so offline fallback is accurate)
+        try { localStorage.setItem('inv_facilityActive', JSON.stringify(facilityActive)); } catch(e){}
+        renderFacilityStatusBar();
+        renderAll();
+        return;
+      }
+    } catch(e) { console.warn('Sheet settings load failed, using localStorage:', e.message); }
+  }
+
+  // Fallback: localStorage (offline / no Sheet URL)
   try {
     const cached = localStorage.getItem('inv_facilityActive');
     if (cached) {
       const parsed = JSON.parse(cached);
-      Object.entries(parsed).forEach(([k,v]) => { facilityActive[k] = v; });
+      Object.entries(parsed).forEach(([k,v]) => { facilityActive[k] = (v === true || v === 'true'); });
     }
     const cachedFac = localStorage.getItem('inv_customFacilities');
     if (cachedFac) {
       const parsed = JSON.parse(cachedFac);
-      parsed.forEach(f => addFacilityToApp(f.key,f.name,f.code,f.city,f.type,false));
+      parsed.forEach(f => { if(!LOCS.includes(f.key)) addFacilityToApp(f.key,f.name,f.code,f.city,f.type,false); });
     }
     renderFacilityStatusBar();
-  } catch(e){}
-
-  // 2. Fetch from Sheet to get shared state (overrides local cache if differs)
-  if (!SYNC_ENABLED()) return;
-  try {
-    const json = await sheetGet({ action: 'loadSettings' });
-    if (json && json.ok && json.data) {
-      let changed = false;
-      if (json.data.facilityActive) {
-        Object.entries(json.data.facilityActive).forEach(([k,v]) => {
-          if (facilityActive[k] !== v) { facilityActive[k] = v; changed = true; }
-        });
-      }
-      if (json.data.customFacilities && json.data.customFacilities.length) {
-        json.data.customFacilities.forEach(f => {
-          if (!LOCS.includes(f.key)) { addFacilityToApp(f.key,f.name,f.code,f.city,f.type,false); changed = true; }
-        });
-      }
-      if (changed) { renderFacilityStatusBar(); renderAll(); }
-      // Update localStorage with authoritative Sheet values
-      try { localStorage.setItem('inv_facilityActive', JSON.stringify(facilityActive)); } catch(e){}
-    }
-  } catch(e) { console.warn('Could not load settings from Sheet:', e.message); }
+    renderAll();
+  } catch(e) {}
 }
 
 function getCustomFacilities() {
@@ -3647,6 +3731,29 @@ if(restoreFromLocalStorage()) renderAll();
 renderAll();
 loadFromSheet();
 loadFacilityStatus();
+
+// ─── Mobile sidebar ───────────────────────────────────────────
+function toggleMobileSidebar() {
+  const sb = document.querySelector('.sidebar');
+  const bd = document.getElementById('mobile-backdrop');
+  if (!sb) return;
+  const isOpen = sb.classList.contains('open');
+  if (isOpen) closeMobileSidebar();
+  else { sb.classList.add('open'); if(bd) bd.classList.add('open'); }
+}
+function closeMobileSidebar() {
+  const sb = document.querySelector('.sidebar');
+  const bd = document.getElementById('mobile-backdrop');
+  if (sb) sb.classList.remove('open');
+  if (bd) bd.classList.remove('open');
+}
+// Close sidebar when a nav button is tapped on mobile
+document.querySelectorAll && document.querySelectorAll('.nav-btn').forEach(function(btn) {
+  btn.addEventListener('click', function() {
+    if (window.innerWidth <= 768) closeMobileSidebar();
+  });
+});
+
 
 // Go to top
 (function(){
