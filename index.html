@@ -1598,7 +1598,7 @@ function fmtTs(d){
 function promptClearLog(loc) {
   const pw = prompt('Enter admin password to clear the update log for ' + NAMES[loc] + ':');
   if (pw === null) return; // cancelled
-  if (pw !== 'ramboinprogress') { toast('Incorrect password'); return; }
+  if (pw !== 'rambo') { toast('Incorrect password'); return; }
   stockUpdateLog[loc] = [];
   toast('Update log cleared for ' + NAMES[loc]);
 }
@@ -1613,7 +1613,7 @@ function confirmResetInventory(loc) {
   if (!confirm('Reset ALL stock to 0 for ' + name + '?\nThis cannot be undone.')) return;
   const pw = prompt('Enter admin password to confirm reset:');
   if (pw === null) return;
-  if (pw !== 'ramboinprogress') { toast('Incorrect password'); return; }
+  if (pw !== 'rambo') { toast('Incorrect password'); return; }
   skus.forEach(s => { inventory[s.id][loc] = 0; });
   // Queue sync for all SKUs at this facility
   skus.forEach(s => queueSync(s.id, loc, 0));
@@ -4228,7 +4228,7 @@ function promptAdminPassword() {
 
   const pw = prompt('Enter admin password to access Admin settings:');
   if (pw === null) return;  // cancelled
-  if (pw !== 'ramboinprogress') {
+  if (pw !== 'rambo') {
     toast('Incorrect password');
     return;
   }
