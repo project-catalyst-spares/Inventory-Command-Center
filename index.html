@@ -2,7 +2,8 @@
 <html lang="en">
 <head>
 <meta charset="UTF-8">
-<link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'><rect width='32' height='32' rx='7' fill='%2318181e'/><text x='16' y='22' text-anchor='middle' font-family='sans-serif' font-weight='900' font-size='15' fill='white' letter-spacing='-0.5'>UC</text></svg>">
+<rect width='32' height='32' rx='7' fill='%2318181e'/><text x='16' y='22' text-anchor='middle' font-family='sans-serif' font-weight='900' font-size='15' fill='white' letter-spacing='-0.5'>UC</text></svg>">
+<link rel="icon" type="image/svg+xml" href="data:image/svg+xml;base64,PHN2ZyB4bWxucz0iaHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmciIHZpZXdCb3g9IjAgMCAzMiAzMiI+CiAgPHJlY3Qgd2lkdGg9IjMyIiBoZWlnaHQ9IjMyIiByeD0iNyIgZmlsbD0iIzE4MTgxZSIvPgogIDx0ZXh0IHg9IjE2IiB5PSIyMyIgdGV4dC1hbmNob3I9Im1pZGRsZSIgZm9udC1mYW1pbHk9IkFyaWFsLHNhbnMtc2VyaWYiIAogICAgICAgIGZvbnQtd2VpZ2h0PSI5MDAiIGZvbnQtc2l6ZT0iMTYiIGZpbGw9IndoaXRlIiBsZXR0ZXItc3BhY2luZz0iLTEiPlVDPC90ZXh0Pgo8L3N2Zz4=">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>Inventory Anchor</title>
 <link href="https://fonts.googleapis.com/css2?family=DM+Sans:wght@400;500;600&family=DM+Mono:wght@400;500&display=swap" rel="stylesheet">
@@ -1296,13 +1297,14 @@ let CODES={WH:'HH-WH-APP-GGN',DS1:'HH-DS-APP-GGN',DS2:'HH-DS-APP-LJP',DS3:'HH-DS
 let CITIES={WH:'Delhi NCR',DS1:'Delhi NCR',DS2:'Delhi NCR',DS3:'Delhi NCR'};
 let FACILITY_TYPE={WH:'warehouse',DS1:'dark-store',DS2:'dark-store',DS3:'dark-store'};
 let facilityActive={WH:true,DS1:true,DS2:true,DS3:true};
+var skuActive={};  // skuActive[id]=false means inactive
 let customCities=['Delhi NCR']; // grows when user adds a new city
 let invSort={col:null,dir:1};   // inventory table sort
 let facSort={col:null,dir:1};   // facility view sort
 
 // ─── GOOGLE SHEETS SYNC CONFIG ───────────────────────────
 // Paste your Apps Script Web App URL here after deploying
-const SHEETS_URL = 'https://script.google.com/macros/s/AKfycbznvNvUxAPwN5LOMz76xx5XSXbrZPRyj3gJeFKmb6svFH8GuR0jicm-uXylP_Xg3k4Bkg/exec';   // e.g. 'https://script.google.com/macros/s/ABC123/exec'
+const SHEETS_URL = 'https://script.google.com/macros/s/AKfycbxIWuL6mcZBB1c2PNP2ZdH_iCaNzI_40vB7xEiLigD58Kr1q8F1GgPhuiboPa_G_m9RhQ/exec';   // e.g. 'https://script.google.com/macros/s/ABC123/exec'
 const SYNC_ENABLED = () => SHEETS_URL.trim().length > 0;
 
 // Pending writes queue — batches updates before sending to Sheet
@@ -1314,7 +1316,7 @@ const SYNC_DELAY_MS = 800;
 // Create your Client ID: console.cloud.google.com → APIs & Services
 // → Credentials → Create → OAuth Client ID → Web Application
 // → Authorised JS origins: https://YOUR-GITHUB-USERNAME.github.io
-const GOOGLE_CLIENT_ID = '43212016597-6etbog3jtjtq1gentupl9060d7sg0ok4.apps.googleusercontent.com';
+const GOOGLE_CLIENT_ID = 'YOUR_GOOGLE_CLIENT_ID_HERE.apps.googleusercontent.com';
 // Restrict access to this domain only (e.g. 'urbancompany.com')
 const ALLOWED_DOMAIN   = 'urbancompany.com';
 
@@ -2551,6 +2553,7 @@ function getAlerts(){
     STORES.forEach(st=>{
       // Skip inactive facilities
       if(typeof facilityActive !== 'undefined' && facilityActive[st] === false) return;
+      if(typeof skuActive !== 'undefined' && skuActive[s.id] === false) return;
       const d=doi(s.id,st),status=doiStatus(d,s.threshold);
       if(status==='crit'||status==='warn')
         a.push({sku:s,store:st,doi:d,status,stock:inventory[s.id][st],cons:consumption[s.id][st]});
@@ -2562,7 +2565,7 @@ function getAlerts(){
 // ─────────────────────────────────────────────
 // NAVIGATION
 // ─────────────────────────────────────────────
-const PAGE_TITLES={settings:'Alert & Display Settings',search:'Search Spare',
+const PAGE_TITLES={settings:'Alert & Display Settings',settings:'Alert & Display Settings',search:'Search Spare',
   dashboard:'Dashboard',facility:'Facility View',inventory:'Inventory Table',
   update:'Update Stock Levels',reorder:'Reorder Queue',
   consumption:'Consumption Rates',skus:'Manage SKUs'
@@ -3141,9 +3144,9 @@ function renderConsumptionTable(){
     <table>
       <thead><tr>
         <th>SKU Code</th><th>SKU Name</th><th>Category</th>
-        <th class="num">DS1 Rate<br><span style="font-weight:400;text-transform:none">(Historical data)</span></th>
-        <th class="num">DS2 Rate<br><span style="font-weight:400;text-transform:none">(mirrors DS1)</span></th>
-        <th class="num">DS3 Rate<br><span style="font-weight:400;text-transform:none">(mirrors DS1)</span></th>
+        <th class="num">GGN Rate<br><span style="font-weight:400;text-transform:none">(HH-DS-APP-GGN)</span></th>
+        <th class="num">LJP Rate<br><span style="font-weight:400;text-transform:none">(HH-DS-APP-LJP)</span></th>
+        <th class="num">NOI Rate<br><span style="font-weight:400;text-transform:none">(HH-DS-APP-NOI)</spanS1)</span></th>
         <th class="num">Avg/day</th>
         <th>Threshold</th>
       </tr></thead>
@@ -3174,24 +3177,42 @@ function renderSkuManage(){
   document.getElementById('sku-manage-table').innerHTML=`
     <table>
       <thead><tr>
-        <th style="width:160px">SKU Code</th>
+        <th style="width:150px">SKU Code</th>
         <th>SKU Name</th>
-        <th style="width:140px">Category</th>
-        <th style="width:130px">Actions</th>
+        <th style="width:130px">Category</th>
+        <th style="width:80px;text-align:center">Status</th>
+        <th style="width:140px">Actions</th>
       </tr></thead>
       <tbody>
-        ${skus.map(s=>`<tr>
-          <td class="mono" style="font-size:11px;color:var(--faint)">${s.code}</td>
-          <td style="font-weight:500;font-size:13px">${s.name.split(',').slice(-1)[0].trim()}</td>
-          <td><span class="badge badge-info" style="font-size:10px">${s.cat.replace('Washing Machine','WM')}</span></td>
-          <td>
-            <button class="btn btn-sm" onclick="editSku(${s.id})" style="margin-right:4px">Edit</button>
-            <button class="btn btn-sm" style="color:var(--red);border-color:var(--rmid)" onclick="deleteSku(${s.id})">Delete</button>
-          </td>
-        </tr>`).join('')}
+        ${skus.map(s=>{
+          const active = skuActive[s.id] !== false;
+          return`<tr style="${active?'':'opacity:.5'}">
+            <td class="mono" style="font-size:11px;color:var(--faint)">${s.code}</td>
+            <td style="font-weight:500;font-size:13px">${s.name.split(',').slice(-1)[0].trim()}</td>
+            <td><span class="badge badge-info" style="font-size:10px">${s.cat.replace('Washing Machine','WM')}</span></td>
+            <td style="text-align:center">
+              <button class="btn btn-sm" style="font-size:10px;padding:2px 8px;${active?'background:var(--gbg);color:var(--green);border-color:var(--gmid)':'background:var(--rbg);color:var(--red);border-color:var(--rmid)'}"
+                onclick="toggleSkuActive(${s.id})">
+                ${active?'Active':'Inactive'}
+              </button>
+            </td>
+            <td>
+              <button class="btn btn-sm" onclick="editSku(${s.id})" style="margin-right:4px">Edit</button>
+              <button class="btn btn-sm" style="color:var(--red);border-color:var(--rmid)" onclick="deleteSku(${s.id})">Delete</button>
+            </td>
+          </tr>`;
+        }).join('')}
       </tbody>
     </table>
   `;
+}
+
+function toggleSkuActive(id) {
+  skuActive[id] = skuActive[id] === false ? true : false;
+  renderSkuManage();
+  // Excluded inactive SKUs from alerts
+  renderMetrics(); renderAlerts();
+  toast((skuActive[id] !== false ? 'SKU marked Active' : 'SKU marked Inactive'));
 }
 
 // ─────────────────────────────────────────────
@@ -3271,11 +3292,26 @@ function updateNavBadges(){
   wb.style.display=warn?'':'none';wb.textContent=warn;
 }
 
+
+function renderSettingsPage() {
+  const critEl = document.getElementById('thresh-crit');
+  if (critEl && !critEl.dataset.init) {
+    critEl.value = CRIT_THRESHOLD;
+    critEl.dataset.init = '1';
+  }
+  const btn1 = document.getElementById('theme-toggle-btn');
+  const btn2 = document.getElementById('settings-theme-btn');
+  const label = darkMode ? '☀️ Light' : '🌙 Dark';
+  if (btn1) btn1.textContent = label;
+  if (btn2) btn2.textContent = label;
+}
+
 function renderAll(){
   renderFacilityStatusBar();
   populateTransferSkuSelect();
   renderVarianceAlerts();
   renderSearchSpare();
+  renderSettingsPage();
   renderVarianceAlerts();
   renderSearchSpare();
   renderMetrics();renderAlerts();renderFacilityHealth();
@@ -4310,9 +4346,13 @@ function renderSearchSpare() {
     el.innerHTML = '<div class="empty">Type a SKU code, company name, part name or category to search</div>';
     return;
   }
+  // Multi-word: every word in query must appear somewhere in the SKU fields
+  const words = q ? q.split(/\s+/).filter(Boolean) : [];
   const results = skus.filter(s => {
     if(cat !== 'all' && s.cat !== cat) return false;
-    return !q || (s.code + ' ' + s.name + ' ' + s.cat).toLowerCase().includes(q);
+    if(!words.length) return true;
+    const hay = (s.code + ' ' + s.name + ' ' + s.cat + ' ' + s.skuid).toLowerCase();
+    return words.every(w => hay.includes(w));
   });
   if(!results.length) { el.innerHTML = '<div class="empty">No spares match your search</div>'; return; }
   el.innerHTML = `<div class="tbl-wrap"><table>
