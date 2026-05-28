@@ -57,7 +57,7 @@ body{font-family:'DM Sans',sans-serif;background:var(--bg);color:var(--text);fon
 .card-title{font-size:14px;font-weight:500;margin-bottom:1rem;display:flex;align-items:center;gap:8px}
 
 /* METRICS */
-.metric-grid{display:grid;grid-template-columns:repeat(4,1fr);gap:12px;margin-bottom:1.25rem}
+.metric-grid{display:grid;grid-template-columns:repeat(5,1fr);gap:12px;margin-bottom:1.25rem}
 .metric-card{background:var(--surface);border:1px solid var(--border);border-radius:var(--rad-lg);padding:1rem 1.25rem}
 .metric-label{font-size:11px;color:var(--muted);margin-bottom:5px}
 .metric-value{font-size:26px;font-weight:600;line-height:1}
@@ -334,7 +334,6 @@ th.sort-desc::after{content:' ↓';opacity:1;color:var(--bmid)}
 
 <!-- ── DASHBOARD ── -->
 <div class="page active" id="page-dashboard">
-  <div class="facility-status-bar" id="fac-status-bar"></div>
   <div class="metric-grid" id="metric-grid"></div>
   <div class="grid2">
     <div class="card">
@@ -381,6 +380,7 @@ th.sort-desc::after{content:' ↓';opacity:1;color:var(--bmid)}
 
 <!-- ── FACILITY VIEW ── -->
 <div class="page" id="page-facility">
+  <div class="facility-status-bar" id="fac-status-bar" style="margin-bottom:.75rem"></div>
   <div class="facility-tabs" id="facility-tabs">
     <button class="ftab active" onclick="switchFacility('WH',this)">🏭 Gurgaon Warehouse<span style="display:block;font-size:9px;opacity:.6;font-weight:400">HH-WH-APP-GGN</span></button>
     <button class="ftab" onclick="switchFacility('DS1',this)">🏪 Gurgaon<span style="display:block;font-size:9px;opacity:.6;font-weight:400">HH-DS-APP-GGN</span></button>
@@ -2076,6 +2076,7 @@ function switchPage(page,el){
   document.querySelectorAll('.nav-btn').forEach(b=>b.classList.remove('active'));
   if(el)el.classList.add('active');
   document.getElementById('topbar-title').textContent=PAGE_TITLES[page]||page;
+  try { sessionStorage.setItem('inv_lastPage', page); } catch(e){}
   renderAll();
 }
 
@@ -2085,12 +2086,34 @@ function switchPage(page,el){
 function renderMetrics(){
   const al=getAlerts(),crit=al.filter(a=>a.status==='crit').length,warn=al.filter(a=>a.status==='warn').length;
   const wh=skus.reduce((s,sk)=>s+(inventory[sk.id].WH||0),0);
-  const total=skus.reduce((s,sk)=>s+Object.values(inventory[sk.id]).reduce((a,b)=>a+b,0),0);
+  const activeDarkStores=STORES.filter(st=>facilityActive[st]).length;
+  const totalDarkStores=STORES.length;
   document.getElementById('metric-grid').innerHTML=`
-    <div class="metric-card"><div class="metric-label">Total SKUs</div><div class="metric-value">${skus.length}</div><div class="metric-sub">Across all locations</div></div>
-    <div class="metric-card mv-red"><div class="metric-label">Critical (DOI &lt; 2d)</div><div class="metric-value">${crit}</div><div class="metric-sub">${crit?'Act now':'All clear'}</div></div>
-    <div class="metric-card mv-amber"><div class="metric-label">Warnings</div><div class="metric-value">${warn}</div><div class="metric-sub">Below threshold</div></div>
-    <div class="metric-card mv-blue"><div class="metric-label">Warehouse Stock</div><div class="metric-value">${wh.toLocaleString()}</div><div class="metric-sub">Buffer units</div></div>
+    <div class="metric-card">
+      <div class="metric-label">Total SKUs</div>
+      <div class="metric-value">${skus.length}</div>
+      <div class="metric-sub">Across all locations</div>
+    </div>
+    <div class="metric-card mv-red">
+      <div class="metric-label">Critical (DOI &lt; 2d)</div>
+      <div class="metric-value">${crit}</div>
+      <div class="metric-sub">${crit?'Act now':'All clear'}</div>
+    </div>
+    <div class="metric-card mv-amber">
+      <div class="metric-label">Warnings</div>
+      <div class="metric-value">${warn}</div>
+      <div class="metric-sub">Below threshold</div>
+    </div>
+    <div class="metric-card mv-blue">
+      <div class="metric-label">Warehouse Stock</div>
+      <div class="metric-value">${wh.toLocaleString()}</div>
+      <div class="metric-sub">Buffer units</div>
+    </div>
+    <div class="metric-card mv-green">
+      <div class="metric-label">Active Dark Stores</div>
+      <div class="metric-value">${activeDarkStores}</div>
+      <div class="metric-sub">${activeDarkStores} of ${totalDarkStores} active</div>
+    </div>
   `;
   const cb=document.getElementById('nb-crit'),wb2=document.getElementById('nb-warn');
   cb.style.display=crit?'':'none';cb.textContent=crit;
@@ -3155,7 +3178,7 @@ function toggleFacility(loc) {
 function renderFacilityStatusBar() {
   const el = document.getElementById('fac-status-bar');
   if (!el) return;
-  el.innerHTML = '<span style="font-size:11px;font-weight:600;color:var(--muted);text-transform:uppercase;letter-spacing:.5px;margin-right:6px">Facilities</span>' +
+  el.innerHTML = '<span style="font-size:11px;font-weight:600;color:var(--muted);text-transform:uppercase;letter-spacing:.5px;margin-right:6px">Toggle Active / Inactive</span>' +
     LOCS.map(loc => {
       const active = facilityActive[loc];
       return `<button class="fac-toggle ${active ? 'active-fac' : 'inactive-fac'}"
@@ -3434,6 +3457,26 @@ function rebuildFacilityFilters() {
 
 // Restore stock from localStorage immediately (before Sheet loads)
 if(restoreFromLocalStorage()) renderAll();
+
+// Restore last visited page
+(function(){
+  try {
+    const lastPage = sessionStorage.getItem('inv_lastPage');
+    if (lastPage && document.getElementById('page-' + lastPage)) {
+      // Find the matching nav button and activate it
+      const navBtns = document.querySelectorAll('.nav-btn');
+      navBtns.forEach(b => b.classList.remove('active'));
+      // Map page to nav button index
+      const pageToNavIdx = {dashboard:0,reorder:1,facility:3,inventory:4,update:5,consumption:6,skus:7};
+      const idx = pageToNavIdx[lastPage];
+      if (idx !== undefined && navBtns[idx]) navBtns[idx].classList.add('active');
+      document.querySelectorAll('.page').forEach(p => p.classList.remove('active'));
+      document.getElementById('page-' + lastPage).classList.add('active');
+      document.getElementById('topbar-title').textContent = (PAGE_TITLES && PAGE_TITLES[lastPage]) || lastPage;
+    }
+  } catch(e){}
+})();
+
 renderAll();
 loadFromSheet();
 loadFacilityStatus();
