@@ -254,6 +254,171 @@ th.sort-desc::after{content:' ↓';opacity:1;color:var(--bmid)}
 ::-webkit-scrollbar{width:5px;height:5px}
 ::-webkit-scrollbar-track{background:transparent}
 ::-webkit-scrollbar-thumb{background:rgba(0,0,0,.15);border-radius:3px}
+
+/* ═══════════════════════════════════════════
+   MOBILE RESPONSIVE — 768px and below
+   ═══════════════════════════════════════════ */
+@media (max-width: 768px) {
+
+  body { font-size: 13px; overflow: hidden; }
+
+  /* ── Layout ── */
+  .shell { flex-direction: column; height: 100vh; }
+  .main  { flex: 1; overflow: hidden; display: flex; flex-direction: column; min-height: 0; }
+  .content { padding: .75rem; overflow-y: auto; flex: 1; }
+
+  /* ── Sidebar → bottom nav bar ── */
+  .sidebar {
+    width: 100%;
+    height: auto;
+    flex-direction: row;
+    overflow-x: auto;
+    overflow-y: hidden;
+    order: 2;                      /* pushes to bottom */
+    padding: 0;
+    border-top: 1px solid rgba(255,255,255,.1);
+    border-right: none;
+    flex-shrink: 0;
+    -webkit-overflow-scrolling: touch;
+    scrollbar-width: none;
+  }
+  .sidebar::-webkit-scrollbar { display: none; }
+
+  /* Hide section labels and logo on mobile */
+  .logo-wrap  { display: none; }
+  .nav-section { display: none; }
+
+  /* Nav buttons → icon-only bottom tabs */
+  .nav-btn {
+    flex-direction: column;
+    align-items: center;
+    gap: 2px;
+    padding: 8px 12px;
+    font-size: 10px;
+    border-radius: 0;
+    margin: 0;
+    min-width: 64px;
+    flex-shrink: 0;
+    white-space: nowrap;
+  }
+  .nav-btn svg { width: 18px; height: 18px; opacity: .8; }
+  .nav-btn.active { background: rgba(255,255,255,.14); }
+  .nav-badge { position: absolute; top: 4px; right: 4px; font-size: 9px; padding: 0 4px; }
+
+  /* ── Topbar ── */
+  .topbar {
+    height: auto;
+    padding: .5rem .75rem;
+    flex-wrap: wrap;
+    gap: 6px;
+  }
+  .topbar-title { font-size: 14px; }
+  .topbar-sub   { font-size: 11px; display: none; }
+  #sync-status  { font-size: 10px; }
+  #last-updated { display: none; }
+  #test-conn-btn { display: none; }
+
+  /* ── Metric cards ── */
+  .metric-grid {
+    grid-template-columns: repeat(2, 1fr);
+    gap: 8px;
+    margin-bottom: 1rem;
+  }
+  .metric-value { font-size: 22px; }
+
+  /* ── Cards ── */
+  .card { padding: .85rem; margin-bottom: .75rem; }
+  .card-title { font-size: 13px; margin-bottom: .75rem; }
+
+  /* ── Two-col grid → single ── */
+  .grid2 { grid-template-columns: 1fr; gap: .75rem; }
+
+  /* ── Facility tabs → scroll row ── */
+  .facility-tabs {
+    width: 100%;
+    overflow-x: auto;
+    flex-wrap: nowrap;
+    scrollbar-width: none;
+    -webkit-overflow-scrolling: touch;
+    gap: 4px;
+    padding: 4px;
+  }
+  .facility-tabs::-webkit-scrollbar { display: none; }
+  .ftab {
+    padding: 5px 12px;
+    font-size: 12px;
+    white-space: nowrap;
+    flex-shrink: 0;
+  }
+
+  /* ── Facility stat grid → 3 col (compact) ── */
+  .facility-stat-grid { grid-template-columns: repeat(3,1fr); gap: 6px; }
+  .fstat-val   { font-size: 17px; }
+  .fstat-label { font-size: 10px; }
+
+  /* ── Tables ── */
+  .tbl-wrap { border-radius: var(--rad); overflow-x: auto; -webkit-overflow-scrolling: touch; }
+  table     { font-size: 12px; min-width: 480px; }
+  thead th  { padding: 7px 8px; font-size: 10px; }
+  td        { padding: 7px 8px; }
+  .num      { font-size: 11px; }
+  .mono     { font-size: 11px; }
+
+  /* ── Filters ── */
+  .filter-row         { gap: 6px; }
+  .filter-row select,
+  .filter-row input   { font-size: 12px; padding: 5px 8px; min-width: 0; }
+  .filter-row input   { min-width: 120px; }
+  .result-count       { width: 100%; text-align: right; margin-left: 0; }
+
+  /* ── Facility status bar ── */
+  .facility-status-bar { gap: 5px; flex-wrap: wrap; padding: .5rem .75rem; }
+  .fac-toggle          { font-size: 11px; padding: 3px 8px; }
+
+  /* ── Alerts ── */
+  .alert-item { gap: 8px; padding: 8px 0; }
+  .alert-icon { width: 26px; height: 26px; }
+
+  /* ── Health items ── */
+  .health-item { gap: 8px; }
+  .progress-track { width: 60px; }
+
+  /* ── Reorder items ── */
+  .reo-item  { flex-wrap: wrap; gap: 8px; }
+  .reo-right { width: 100%; display: flex; align-items: center; gap: 10px; text-align: left; }
+  .reo-qty   { font-size: 16px; }
+
+  /* ── Update stock table ── */
+  .inline-edit { width: 56px; }
+
+  /* ── Modal ── */
+  .modal { width: 96vw; padding: 1rem; max-height: 88vh; }
+  .modal-form-grid { grid-template-columns: 1fr; }
+  .mfg-full { grid-column: 1; }
+
+  /* ── Consumption table ── */
+  .cons-cell { font-size: 11px; }
+
+  /* ── Go to top ── */
+  .go-top { bottom: 5rem; }   /* above the bottom nav */
+
+  /* ── Transfer form ── */
+  .transfer-form { grid-template-columns: 1fr; }
+
+  /* ── Context menu ── */
+  .ctx-menu { font-size: 13px; }
+
+  /* ── Update log ── */
+  .upd-log-time { min-width: 90px; font-size: 10px; }
+  .upd-log-entry { font-size: 11px; gap: 6px; }
+}
+
+/* ── Very small screens (≤380px) ── */
+@media (max-width: 380px) {
+  .metric-grid { grid-template-columns: 1fr 1fr; gap: 6px; }
+  .nav-btn     { min-width: 54px; font-size: 9px; padding: 7px 8px; }
+  table        { min-width: 360px; }
+}
 </style>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
 </head>
@@ -330,7 +495,7 @@ th.sort-desc::after{content:' ↓';opacity:1;color:var(--bmid)}
   <button class="btn btn-sm" onclick="testConnection()" style="font-size:11px;padding:5px 10px">🔗 Test Sheet</button>
 </div>
 
-<div class="content" id="main-content">
+<div class="content" id="main-content" style="-webkit-overflow-scrolling:touch">
 
 <!-- ── DASHBOARD ── -->
 <div class="page active" id="page-dashboard">
@@ -2214,15 +2379,16 @@ function renderFacilityHealth(){
     const sa=getAlerts().filter(a=>a.store===loc);
     const crit=sa.filter(a=>a.status==='crit').length,warn=sa.filter(a=>a.status==='warn').length;
     const h=crit>0?'crit':warn>0?'warn':'ok';
-    const dv=skus.filter(s=>consumption[s.id]&&consumption[s.id][loc]>0).map(s=>doi(s.id,loc)).filter(d=>d!==Infinity);
-    const avg=dv.length?Math.round(dv.reduce((a,b)=>a+b,0)/dv.length*10)/10:0;
+    const dwItems=skus.filter(s=>consumption[s.id]&&consumption[s.id][loc]>0).map(s=>({d:doi(s.id,loc),r:consumption[s.id][loc]})).filter(x=>x.d!==Infinity);
+    const sumW=dwItems.reduce((a,x)=>a+x.r,0);
+    const avg=sumW>0?Math.round(dwItems.reduce((a,x)=>a+x.d*x.r,0)/sumW*10)/10:0;
     const dotC=h==='crit'?'var(--rmid)':h==='warn'?'var(--amid)':'var(--gmid)';
     const pct=Math.min(100,avg/21*100);
     return`<div class="health-item">
       <div class="health-dot" style="background:${dotC}"></div>
       <div class="health-info">
         <div class="health-name">${NAMES[loc]}<span style="font-size:10px;color:var(--faint);font-weight:400;margin-left:6px">${CODES[loc]||''}</span></div>
-        <div class="health-sub">Avg DOI ${avg}d · ${crit} critical, ${warn} warnings</div>
+        <div class="health-sub">Wtd. Avg DOI ${avg}d · ${crit} critical, ${warn} warnings</div>
         <div class="progress-track"><div class="progress-fill" style="width:${pct}%;background:${dotC}"></div></div>
       </div>
       <span class="badge badge-${h}">${h==='crit'?'Critical':h==='warn'?'At Risk':'Healthy'}</span>
@@ -2254,13 +2420,14 @@ function renderFacilityStats(){
       if(st==='crit')crit++;else if(st==='warn')warn++;else ok++;
     });
   }
-  const doiVals=skus.filter(s=>consumption[s.id]&&consumption[s.id][loc]>0).map(s=>doi(s.id,loc)).filter(d=>d!==Infinity);
-  const avgDoi=doiVals.length?Math.round(doiVals.reduce((a,b)=>a+b,0)/doiVals.length*10)/10:'—';
+  const dwStat=skus.filter(s=>consumption[s.id]&&consumption[s.id][loc]>0).map(s=>({d:doi(s.id,loc),r:consumption[s.id][loc]})).filter(x=>x.d!==Infinity);
+  const sumWStat=dwStat.reduce((a,x)=>a+x.r,0);
+  const avgDoi=sumWStat>0?Math.round(dwStat.reduce((a,x)=>a+x.d*x.r,0)/sumWStat*10)/10:'—';
 
   document.getElementById('facility-stats').innerHTML=`
     <div class="fstat"><div class="fstat-val">${totalStock.toLocaleString()}</div><div class="fstat-label">Total Units</div></div>
     <div class="fstat"><div class="fstat-val" style="color:var(${isStore?(crit>0?'--rmid':warn>0?'--amid':'--gmid'):'--bmid'})">${isStore?crit:'—'}</div><div class="fstat-label">Critical SKUs</div></div>
-    <div class="fstat"><div class="fstat-val">${isStore?avgDoi:'—'}</div><div class="fstat-label">Avg DOI (days)</div></div>
+    <div class="fstat"><div class="fstat-val">${isStore?avgDoi:'—'}</div><div class="fstat-label">Wtd. Avg DOI (days)</div></div>
   `;
 }
 
