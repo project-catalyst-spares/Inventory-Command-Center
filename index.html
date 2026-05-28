@@ -2,6 +2,7 @@
 <html lang="en">
 <head>
 <meta charset="UTF-8">
+<link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'><rect width='32' height='32' rx='7' fill='%2318181e'/><text x='16' y='22' text-anchor='middle' font-family='sans-serif' font-weight='900' font-size='15' fill='white' letter-spacing='-0.5'>UC</text></svg>">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>Inventory Anchor</title>
 <link href="https://fonts.googleapis.com/css2?family=DM+Sans:wght@400;500;600&family=DM+Mono:wght@400;500&display=swap" rel="stylesheet">
@@ -58,7 +59,7 @@ body{font-family:'DM Sans',sans-serif;background:var(--bg);color:var(--text);fon
 
 /* METRICS */
 .metric-grid{display:grid;grid-template-columns:repeat(5,1fr);gap:12px;margin-bottom:1.25rem}
-.metric-card{background:var(--surface);border:1px solid var(--border);border-radius:var(--rad-lg);padding:1rem 1.25rem}
+.metric-card{background:var(--surface);border:1px solid var(--border);border-radius:var(--rad-lg);padding:1rem 1.25rem;text-align:center}
 .metric-label{font-size:11px;color:var(--muted);margin-bottom:5px}
 .metric-value{font-size:26px;font-weight:600;line-height:1}
 .metric-sub{font-size:11px;color:var(--faint);margin-top:3px}
@@ -303,7 +304,7 @@ th.sort-desc::after{content:' ↓';opacity:1;color:var(--bmid)}
   background: #fff; border-radius: 12px;
   display: flex; align-items: center; justify-content: center;
 }
-.auth-logo span { font-size:20px;font-weight:800;color:#18181e;letter-spacing:-.5px; }
+.auth-logo span { font-size:20px;font-weight:900;color:#18181e;letter-spacing:-1px;font-family:Arial,sans-serif; }
 .auth-title  { font-size:18px;font-weight:600;color:#f0efe8;margin-bottom:.35rem }
 .auth-sub    { font-size:13px;color:#6b6b77;margin-bottom:1.75rem;line-height:1.5 }
 .auth-google-btn {
@@ -359,6 +360,29 @@ th.sort-desc::after{content:' ↓';opacity:1;color:var(--bmid)}
 .nav-admin-items { display: none; }
 .nav-admin-items.open { display: block; }
 .nav-btn.admin-locked { opacity: .45; pointer-events: none; }
+
+/* ── DARK MODE ── */
+[data-theme="dark"] {
+  --bg:#111110;--surface:#1a1a18;--surface2:#242422;
+  --border:rgba(255,255,255,.08);--border-s:rgba(255,255,255,.14);
+  --text:#f0efe8;--muted:#9e9ea8;--faint:#5a5a66;
+}
+[data-theme="dark"] table thead th { background:var(--surface2); }
+[data-theme="dark"] tr:hover td    { background:#1f1f1d; }
+[data-theme="dark"] .form-group select,
+[data-theme="dark"] .form-group input,
+[data-theme="dark"] .filter-row select,
+[data-theme="dark"] .filter-row input { background:var(--surface2);color:var(--text); }
+[data-theme="dark"] .modal { background:var(--surface); }
+[data-theme="dark"] .topbar { background:var(--surface); }
+
+.theme-toggle {
+  background:none;border:1px solid var(--border-s);border-radius:20px;
+  padding:4px 10px;font-size:12px;cursor:pointer;color:var(--muted);
+  font-family:inherit;display:flex;align-items:center;gap:5px;
+  transition:all .15s;flex-shrink:0;
+}
+.theme-toggle:hover { background:var(--surface2); }
 ::-webkit-scrollbar{width:5px;height:5px}
 ::-webkit-scrollbar-track{background:transparent}
 ::-webkit-scrollbar-thumb{background:rgba(0,0,0,.15);border-radius:3px}
@@ -634,7 +658,7 @@ th.sort-desc::after{content:' ↓';opacity:1;color:var(--bmid)}
     <!-- UC logo inverted for dark sidebar: white square + dark UC text -->
     <div style="display:flex;align-items:center;gap:10px;margin-bottom:10px">
       <div style="width:38px;height:38px;background:#ffffff;border-radius:9px;display:flex;align-items:center;justify-content:center;flex-shrink:0">
-        <span style="font-size:14px;font-weight:800;color:#18181e;letter-spacing:-.5px;font-family:'DM Sans',sans-serif">UC</span>
+        <span style="font-size:15px;font-weight:900;color:#18181e;letter-spacing:-1px;font-family:Arial,sans-serif">UC</span>
       </div>
       <div style="line-height:1.25">
         <div style="font-size:13px;font-weight:600;color:#f0efe8">Urban</div>
@@ -650,6 +674,10 @@ th.sort-desc::after{content:' ↓';opacity:1;color:var(--bmid)}
     <svg fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><rect x="3" y="3" width="7" height="7" rx="1"/><rect x="14" y="3" width="7" height="7" rx="1"/><rect x="3" y="14" width="7" height="7" rx="1"/><rect x="14" y="14" width="7" height="7" rx="1"/></svg>
     Dashboard
     <span class="nav-badge nbadge-red" id="nb-crit" style="display:none"></span>
+  </button>
+  <button class="nav-btn" onclick="switchPage('search',this)" oncontextmenu="showCtxMenu(event,'search')" title="Search Spare">
+    <svg fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg>
+    Search Spare
   </button>
   <button class="nav-btn" onclick="switchPage('reorder',this)" oncontextmenu="showCtxMenu(event,'reorder')" title="Reorder Queue">
     <svg fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><polyline points="23 4 23 10 17 10"/><path d="M20.49 15a9 9 0 1 1-2.12-9.36L23 10"/></svg>
@@ -689,6 +717,10 @@ th.sort-desc::after{content:' ↓';opacity:1;color:var(--bmid)}
       <svg fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><line x1="8" y1="6" x2="21" y2="6"/><line x1="8" y1="12" x2="21" y2="12"/><line x1="8" y1="18" x2="21" y2="18"/><line x1="3" y1="6" x2="3.01" y2="6"/><line x1="3" y1="12" x2="3.01" y2="12"/><line x1="3" y1="18" x2="3.01" y2="18"/></svg>
       Manage SKUs
     </button>
+    <button class="nav-btn" onclick="switchPage('settings',this)" oncontextmenu="showCtxMenu(event,'settings')" title="Settings">
+      <svg fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 0 1-2.83 2.83l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-4 0v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 0 1-2.83-2.83l.06-.06A1.65 1.65 0 0 0 4.68 15a1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1 0-4h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 0 1 2.83-2.83l.06.06A1.65 1.65 0 0 0 9 4.68a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 4 0v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 0 1 2.83 2.83l-.06.06A1.65 1.65 0 0 0 19.4 9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 0 4h-.09a1.65 1.65 0 0 0-1.51 1z"/></svg>
+      Settings
+    </button>
   </div>
 </div>
 </nav>
@@ -715,10 +747,32 @@ th.sort-desc::after{content:' ↓';opacity:1;color:var(--bmid)}
     <span id="user-name"></span>
     <button class="sign-out-btn" onclick="signOut()" title="Sign out">✕</button>
   </div>
+  <button class="theme-toggle" id="theme-toggle-btn" onclick="toggleDarkMode()">🌙 Dark</button>
   <button class="btn btn-sm" onclick="testConnection()" style="font-size:11px;padding:5px 10px">🔗 Test Sheet</button>
 </div>
 
 <div class="content" id="main-content" style="-webkit-overflow-scrolling:touch">
+
+<!-- ── SEARCH SPARE ── -->
+<div class="page" id="page-search">
+  <div class="card">
+    <div class="card-title">
+      <svg width="15" height="15" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg>
+      Search Spare
+    </div>
+    <div style="display:flex;gap:8px;flex-wrap:wrap;margin-bottom:1rem">
+      <input type="text" id="search-spare-q" placeholder="SKU Code, company, name, category…" oninput="renderSearchSpare()"
+        style="flex:1;min-width:200px;font-family:inherit;font-size:13px;padding:9px 12px;border-radius:var(--rad);border:1px solid var(--border);background:var(--surface2);color:var(--text)">
+      <select id="search-spare-cat" onchange="renderSearchSpare()" style="font-family:inherit;font-size:13px;padding:9px 10px;border-radius:var(--rad);border:1px solid var(--border);background:var(--surface2);color:var(--text)">
+        <option value="all">All Categories</option>
+        <option value="Washing Machine">Washing Machine</option>
+        <option value="Microwave">Microwave</option>
+        <option value="Refrigerator">Refrigerator</option>
+      </select>
+    </div>
+    <div id="search-spare-results"></div>
+  </div>
+</div>
 
 <!-- ── DASHBOARD ── -->
 <div class="page active" id="page-dashboard">
@@ -756,6 +810,14 @@ th.sort-desc::after{content:' ↓';opacity:1;color:var(--bmid)}
       </div>
       <div id="alerts-list"></div>
     </div>
+    <div class="card" style="margin-top:0">
+      <div class="card-title" style="margin-bottom:.5rem">
+        <svg width="14" height="14" fill="none" stroke="var(--amid)" stroke-width="2" viewBox="0 0 24 24"><polyline points="23 6 13.5 15.5 8.5 10.5 1 18"/><polyline points="17 6 23 6 23 12"/></svg>
+        Variance Alerts
+        <span style="font-size:11px;color:var(--faint);font-weight:400;margin-left:4px">Stock moving faster or slower than expected</span>
+      </div>
+      <div id="variance-list"></div>
+    </div>
     <div class="card">
       <div class="card-title">
         <svg width="15" height="15" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><rect x="3" y="3" width="18" height="18" rx="2"/><path d="M3 9h18M9 21V9"/></svg>
@@ -776,19 +838,10 @@ th.sort-desc::after{content:' ↓';opacity:1;color:var(--bmid)}
     <button class="ftab" onclick="switchFacility('DS3',this)">🏪 Noida<span style="display:block;font-size:9px;opacity:.6;font-weight:400">HH-DS-APP-NOI</span></button>
   </div>
   <div class="facility-stat-grid" id="facility-stats"></div>
-  <!-- Update log for this facility -->
-  <div class="card" style="margin-bottom:1rem;padding:1rem 1.25rem">
-    <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:.25rem">
-      <div style="font-size:13px;font-weight:500;display:flex;align-items:center;gap:8px">
-        <svg width="14" height="14" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/></svg>
-        Inventory Update Log
-      </div>
-      <div style="display:flex;gap:6px">
-        <button class="btn btn-sm btn-danger" style="font-size:11px" onclick="confirmResetInventory(activeFacility)" title="Reset all stock to 0 for this facility">↺ Reset Stock to 0</button>
-        <button class="btn btn-sm" style="font-size:11px" onclick="promptClearLog(activeFacility)">Clear log</button>
-      </div>
-    </div>
-    <div id="facility-update-log"></div>
+  <!-- Reset stock + log link -->
+  <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:.75rem;flex-wrap:wrap;gap:8px">
+    <button class="btn btn-sm" style="font-size:11px;color:var(--red);border-color:var(--rmid)" onclick="confirmResetInventory(activeFacility)">↺ Reset Stock to 0</button>
+    <span style="font-size:11px;color:var(--faint)">All changes are logged to Google Sheet → Update Log tab</span>
   </div>
   <div class="filter-row">
     <select id="fac-filter-status" onchange="renderFacilityTable()">
@@ -947,8 +1000,8 @@ th.sort-desc::after{content:' ↓';opacity:1;color:var(--bmid)}
         <select id="single-facility">
           <option value="WH">Gurgaon Warehouse</option>
           <option value="DS1">Gurgaon (DS1)</option>
-          <option value="DS2">Lajpat Nagar (DS2)</option>
-          <option value="DS3">Noida (DS3)</option>
+          <option value="DS2">Lajpat Nagar</option>
+          <option value="DS3">Noida</option>
         </select>
       </div>
       <div class="form-group">
@@ -1077,7 +1130,8 @@ th.sort-desc::after{content:' ↓';opacity:1;color:var(--bmid)}
 
 <!-- ── MANAGE SKUs ── -->
 <div class="page" id="page-skus">
-  <div style="display:flex;justify-content:flex-end;margin-bottom:1rem">
+  <div style="display:flex;justify-content:flex-end;gap:8px;margin-bottom:1rem">
+    <button class="btn btn-sm" onclick="openBulkSkuUpload()">⬆ Bulk Upload</button>
     <button class="btn btn-sm btn-primary" onclick="openAddSku()">+ Add SKU</button>
   </div>
   <div class="tbl-wrap" id="sku-manage-table"></div>
@@ -1101,6 +1155,52 @@ th.sort-desc::after{content:' ↓';opacity:1;color:var(--bmid)}
   </div>
 </div>
 
+
+
+<!-- ── ALERT SETTINGS ── -->
+<div class="page" id="page-settings">
+  <div class="card">
+    <div class="card-title">
+      <svg width="14" height="14" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 0 1-2.83 2.83l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-4 0v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 0 1-2.83-2.83l.06-.06A1.65 1.65 0 0 0 4.68 15a1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1 0-4h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 0 1 2.83-2.83l.06.06A1.65 1.65 0 0 0 9 4.68a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 4 0v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 0 1 2.83 2.83l-.06.06A1.65 1.65 0 0 0 19.4 9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 0 4h-.09a1.65 1.65 0 0 0-1.51 1z"/></svg>
+      Alert Thresholds
+    </div>
+    <p style="font-size:12px;color:var(--muted);margin-bottom:1rem">Define when DOI triggers Critical or Warning alerts. These apply across all facilities and SKUs.</p>
+    <div style="display:grid;grid-template-columns:1fr 1fr;gap:1rem;max-width:480px">
+      <div class="form-group">
+        <label>🔴 Critical — DOI below (days)</label>
+        <input type="number" id="thresh-crit" min="1" max="30" value="2" style="font-family:inherit;font-size:13px;padding:8px;border-radius:var(--rad);border:1px solid var(--border);background:var(--surface2);color:var(--text)">
+        <span style="font-size:11px;color:var(--faint)">Currently: stock runs out within this many days</span>
+      </div>
+      <div class="form-group">
+        <label>🟡 Warning — DOI below (days)</label>
+        <input type="number" id="thresh-warn-global" min="1" max="90" value="7" style="font-family:inherit;font-size:13px;padding:8px;border-radius:var(--rad);border:1px solid var(--border);background:var(--surface2);color:var(--text)">
+        <span style="font-size:11px;color:var(--faint)">Global fallback — per-SKU threshold overrides this</span>
+      </div>
+    </div>
+    <button class="btn btn-primary btn-sm" onclick="saveAlertThresholds()" style="margin-top:1rem">Save Thresholds</button>
+    <span id="thresh-saved" style="font-size:12px;color:var(--gmid);opacity:0;margin-left:8px;transition:opacity .3s"></span>
+  </div>
+  <div class="card">
+    <div class="card-title">
+      🌙 Appearance
+    </div>
+    <div style="display:flex;align-items:center;gap:12px">
+      <span style="font-size:13px">Dark Mode</span>
+      <button class="theme-toggle" onclick="toggleDarkMode()" id="settings-theme-btn">Toggle</button>
+    </div>
+  </div>
+  <div class="card">
+    <div class="card-title">📧 Email Alerts</div>
+    <p style="font-size:12px;color:var(--muted);margin-bottom:.75rem">Critical alerts are emailed automatically when triggered. Recipients below.</p>
+    <div id="alert-recipients" style="font-size:12px;font-family:'DM Mono',monospace;color:var(--muted);line-height:1.8">
+      hridaymaini@urbancompany.com<br>
+      ayushyaujjwal@urbancompany.com<br>
+      lakshaysharma.ext@urbancompany.com<br>
+      ritikkumar.int@urbancompany.com
+    </div>
+    <p style="font-size:11px;color:var(--faint);margin-top:.5rem">Managed in Apps Script · Triggers fire on Sheet updates</p>
+  </div>
+</div>
 
 <!-- ADD FACILITY MODAL -->
 <div class="modal-overlay" id="modal-add-fac">
@@ -1169,8 +1269,8 @@ th.sort-desc::after{content:' ↓';opacity:1;color:var(--bmid)}
     <div class="modal-form-grid">
       <div class="form-group"><label>Warehouse</label><input id="m-wh" type="number" value="0" min="0"></div>
       <div class="form-group"><label>Gurgaon (DS1)</label><input id="m-ds1" type="number" value="0" min="0"></div>
-      <div class="form-group"><label>Lajpat Nagar (DS2)</label><input id="m-ds2" type="number" value="0" min="0"></div>
-      <div class="form-group"><label>Noida (DS3)</label><input id="m-ds3" type="number" value="0" min="0"></div>
+      <div class="form-group"><label>Lajpat Nagar </label><input id="m-ds2" type="number" value="0" min="0"></div>
+      <div class="form-group"><label>Noida </label><input id="m-ds3" type="number" value="0" min="0"></div>
     </div>
     <p style="font-size:11px;font-weight:600;color:var(--faint);text-transform:uppercase;letter-spacing:.5px;margin:1rem 0 .5rem">Daily Consumption (DS1 pilot — DS2 & DS3 will mirror)</p>
     <div class="modal-form-grid">
@@ -1214,7 +1314,7 @@ const SYNC_DELAY_MS = 800;
 // Create your Client ID: console.cloud.google.com → APIs & Services
 // → Credentials → Create → OAuth Client ID → Web Application
 // → Authorised JS origins: https://YOUR-GITHUB-USERNAME.github.io
-const GOOGLE_CLIENT_ID = 'YOUR_GOOGLE_CLIENT_ID_HERE.apps.googleusercontent.com';
+const GOOGLE_CLIENT_ID = '43212016597-6etbog3jtjtq1gentupl9060d7sg0ok4.apps.googleusercontent.com';
 // Restrict access to this domain only (e.g. 'urbancompany.com')
 const ALLOWED_DOMAIN   = 'urbancompany.com';
 
@@ -1422,7 +1522,8 @@ async function loadFromSheet() {
 
     nextId = skus.length ? Math.max(...skus.map(s => Number(s.id))) + 1 : 1;
     setSyncStatus('ok');
-    clearLocalStockCache(); // Sheet is now authoritative — clear local cache
+    clearLocalStockCache();
+    takeStockSnapshot(); // record baseline for variance tracking
     renderAll();
 
   } catch(err) {
@@ -1460,12 +1561,28 @@ function logStockUpdate(loc, skusChanged, method, summary){
   const entry={
     ts: new Date(),
     skusChanged,
-    method,   // 'manual'|'bulk'|'excel'|'replenish'|'single'
+    method,
     summary
   };
+  // In-memory log (for session reference)
   stockUpdateLog[loc].unshift(entry);
   if(stockUpdateLog[loc].length>MAX_LOG_ENTRIES)
     stockUpdateLog[loc].length=MAX_LOG_ENTRIES;
+
+  // Persist to Sheet asynchronously (fire-and-forget)
+  if(SYNC_ENABLED()){
+    const user = currentUser ? currentUser.email : 'unknown';
+    sheetGet({
+      action: 'logEntry',
+      logEntry: {
+        facility:    NAMES[loc] || loc,
+        skusChanged,
+        method,
+        summary:     summary + (user !== 'unknown' ? ' [' + user + ']' : ''),
+        user:        user
+      }
+    }).catch(function(){});  // non-blocking, silent fail
+  }
 }
 
 function fmtTs(d){
@@ -1480,7 +1597,6 @@ function promptClearLog(loc) {
   if (pw === null) return; // cancelled
   if (pw !== 'ramboinprogress') { toast('Incorrect password'); return; }
   stockUpdateLog[loc] = [];
-  renderFacilityUpdateLog();
   toast('Update log cleared for ' + NAMES[loc]);
 }
 
@@ -1503,30 +1619,6 @@ function confirmResetInventory(loc) {
   toast(name + ' — all stock reset to 0');
 }
 
-function renderFacilityUpdateLog(){
-  const loc=activeFacility;
-  const entries=stockUpdateLog[loc];
-  const el=document.getElementById('facility-update-log');
-  if(!el)return;
-  if(!entries.length){
-    el.innerHTML='<div class="upd-log-empty">No updates recorded for this facility yet.</div>';
-    return;
-  }
-  const methodColor={
-    manual:'var(--bmid)',bulk:'var(--bmid)',excel:'var(--gmid)',
-    replenish:'var(--amid)',single:'var(--bmid)'
-  };
-  const methodLabel={
-    manual:'Manual entry',bulk:'Bulk save',excel:'Excel import',
-    replenish:'Replenishment',single:'Single update'
-  };
-  el.innerHTML=entries.map(e=>`
-    <div class="upd-log-entry">
-      <span class="upd-log-time">${fmtTs(e.ts)}</span>
-      <span class="upd-log-badge" style="background:var(--bbg);color:${methodColor[e.method]||'var(--bmid)'}">${methodLabel[e.method]||e.method}</span>
-      <span class="upd-log-detail">${e.summary}</span>
-    </div>`).join('');
-}
 const CONS_PASSWORD='UC@Inventory2026';
 let consUnlocked=true;
 let activeFacility='WH';
@@ -2443,12 +2535,7 @@ function doi(skuId,store){
   if(!c||c===0)return Infinity;
   return inventory[skuId][store]/c;
 }
-function doiStatus(d,threshold){
-  if(d===Infinity)return'na';
-  if(d<2)return'crit';
-  if(d<threshold)return'warn';
-  return'ok';
-}
+// doiStatus — see editable version below
 function doiLabel(d){
   if(d===Infinity)return'—';
   return(Math.round(d*10)/10)+'d';
@@ -2475,7 +2562,7 @@ function getAlerts(){
 // ─────────────────────────────────────────────
 // NAVIGATION
 // ─────────────────────────────────────────────
-const PAGE_TITLES={
+const PAGE_TITLES={settings:'Alert & Display Settings',search:'Search Spare',
   dashboard:'Dashboard',facility:'Facility View',inventory:'Inventory Table',
   update:'Update Stock Levels',reorder:'Reorder Queue',
   consumption:'Consumption Rates',skus:'Manage SKUs'
@@ -2651,7 +2738,6 @@ function switchFacility(loc,el){
   if(el)el.classList.add('active');
   renderFacilityStats();
   renderFacilityTable();
-  renderFacilityUpdateLog();
 }
 
 function renderFacilityStats(){
@@ -2893,7 +2979,6 @@ function saveStockUpdate(id){
   const ind=document.getElementById(`upd-ok-${id}`);
   if(ind){ind.style.opacity=1;setTimeout(()=>ind.style.opacity=0,1500);}
   renderMetrics();renderAlerts();renderFacilityHealth();
-  renderFacilityUpdateLog();
   updateNavBadges();
 }
 
@@ -3189,8 +3274,12 @@ function updateNavBadges(){
 function renderAll(){
   renderFacilityStatusBar();
   populateTransferSkuSelect();
+  renderVarianceAlerts();
+  renderSearchSpare();
+  renderVarianceAlerts();
+  renderSearchSpare();
   renderMetrics();renderAlerts();renderFacilityHealth();
-  renderFacilityStats();renderFacilityTable();renderFacilityUpdateLog();
+  renderFacilityStats();renderFacilityTable();
   renderInventory();renderUpdateTable();renderReorder();
   renderSkuManage();
   renderConsumptionTable();
@@ -4162,6 +4251,195 @@ function showSessionExpired() {
 ['mousemove','mousedown','touchstart','keydown','scroll','click'].forEach(function(evt) {
   document.addEventListener(evt, resetInactivityTimer, { passive: true });
 });
+// ─── Dark mode ────────────────────────────────────────────────
+var darkMode = false;
+function toggleDarkMode() {
+  darkMode = !darkMode;
+  document.documentElement.setAttribute('data-theme', darkMode ? 'dark' : '');
+  const btn1 = document.getElementById('theme-toggle-btn');
+  const btn2 = document.getElementById('settings-theme-btn');
+  const label = darkMode ? '☀️ Light' : '🌙 Dark';
+  if(btn1) btn1.textContent = label;
+  if(btn2) btn2.textContent = label;
+  try { localStorage.setItem('inv_darkMode', darkMode ? '1' : '0'); } catch(e){}
+}
+(function() {
+  try {
+    if(localStorage.getItem('inv_darkMode') === '1') {
+      darkMode = true;
+      document.documentElement.setAttribute('data-theme', 'dark');
+    }
+  } catch(e){}
+})();
+
+// ─── Alert thresholds (editable) ─────────────────────────────
+var CRIT_THRESHOLD = 2;
+
+// Override doiStatus to use editable critical threshold
+function doiStatus(d, threshold) {
+  if(d === Infinity) return 'na';
+  if(d < CRIT_THRESHOLD) return 'crit';
+  if(d < threshold) return 'warn';
+  return 'ok';
+}
+
+function saveAlertThresholds() {
+  const crit = parseFloat(document.getElementById('thresh-crit')?.value) || 2;
+  CRIT_THRESHOLD = Math.max(0.5, crit);
+  try { localStorage.setItem('inv_critThresh', CRIT_THRESHOLD); } catch(e){}
+  renderAll();
+  const el = document.getElementById('thresh-saved');
+  if(el) { el.textContent = '✓ Saved'; el.style.opacity = 1; setTimeout(()=>el.style.opacity=0,2000); }
+  toast('Alert thresholds updated');
+}
+
+(function() {
+  try {
+    const c = localStorage.getItem('inv_critThresh');
+    if(c) CRIT_THRESHOLD = parseFloat(c);
+  } catch(e){}
+})();
+
+// ─── Search Spare ─────────────────────────────────────────────
+function renderSearchSpare() {
+  const q   = (document.getElementById('search-spare-q')?.value || '').toLowerCase().trim();
+  const cat = document.getElementById('search-spare-cat')?.value || 'all';
+  const el  = document.getElementById('search-spare-results');
+  if(!el) return;
+  if(!q && cat === 'all') {
+    el.innerHTML = '<div class="empty">Type a SKU code, company name, part name or category to search</div>';
+    return;
+  }
+  const results = skus.filter(s => {
+    if(cat !== 'all' && s.cat !== cat) return false;
+    return !q || (s.code + ' ' + s.name + ' ' + s.cat).toLowerCase().includes(q);
+  });
+  if(!results.length) { el.innerHTML = '<div class="empty">No spares match your search</div>'; return; }
+  el.innerHTML = `<div class="tbl-wrap"><table>
+    <thead><tr>
+      <th>SKU Code</th><th>SKU Name</th><th>Category</th>
+      ${LOCS.map(l=>`<th class="num">${NAMES[l]}</th>`).join('')}
+      <th>Status</th>
+    </tr></thead>
+    <tbody>
+      ${results.slice(0,50).map(s => {
+        const worst = STORES.filter(st=>facilityActive[st]).map(st=>doiStatus(doi(s.id,st),s.threshold))
+          .reduce((b,c)=>c==='crit'?'crit':c==='warn'&&b!=='crit'?'warn':b,'ok');
+        return `<tr>
+          <td class="mono" style="font-size:11px;color:var(--faint)">${s.code}</td>
+          <td style="font-weight:500">${s.name.split(',').slice(-1)[0].trim()}</td>
+          <td><span class="badge badge-info" style="font-size:10px">${s.cat.replace('Washing Machine','WM')}</span></td>
+          ${LOCS.map(l => {
+            const stock=inventory[s.id][l]||0;
+            const isStore=STORES.includes(l);
+            const d=isStore?doi(s.id,l):null;
+            const st=isStore?doiStatus(d,s.threshold):'ok';
+            return `<td class="num" style="${isStore&&st==='crit'?'color:var(--rmid);font-weight:700':isStore&&st==='warn'?'color:var(--amid)':''}">${stock}${isStore&&d!==null&&d!==Infinity?`<br><span style="font-size:10px;opacity:.7">${doiLabel(d)}</span>`:''}</td>`;
+          }).join('')}
+          <td><span class="badge badge-${worst}">${worst==='crit'?'Critical':worst==='warn'?'Warning':'OK'}</span></td>
+        </tr>`;
+      }).join('')}
+    </tbody></table></div>
+    ${results.length>50?`<p style="font-size:12px;color:var(--faint);padding:.5rem">Showing 50 of ${results.length}</p>`:''}`;
+}
+
+// ─── Variance Alerts ──────────────────────────────────────────
+var stockSnapshot = {};
+var snapshotTs    = null;
+
+function takeStockSnapshot() {
+  snapshotTs = new Date();
+  stockSnapshot = {};
+  STORES.forEach(st => {
+    stockSnapshot[st] = {};
+    skus.forEach(s => { stockSnapshot[st][s.id] = inventory[s.id][st] || 0; });
+  });
+  try { localStorage.setItem('inv_snapshot', JSON.stringify({ts:snapshotTs.toISOString(), snap:stockSnapshot})); } catch(e){}
+}
+
+(function() {
+  try {
+    const raw = localStorage.getItem('inv_snapshot');
+    if(!raw) return;
+    const p = JSON.parse(raw);
+    snapshotTs    = new Date(p.ts);
+    stockSnapshot = p.snap;
+  } catch(e){}
+})();
+
+function renderVarianceAlerts() {
+  const el = document.getElementById('variance-list');
+  if(!el) return;
+  if(!snapshotTs || !Object.keys(stockSnapshot).length) {
+    el.innerHTML = '<div class="empty" style="padding:.5rem 0;font-size:12px">Variance data available after first session snapshot.</div>';
+    return;
+  }
+  const daysDiff = (new Date() - snapshotTs) / 86400000;
+  if(daysDiff < 0.01) { el.innerHTML = '<div class="empty" style="padding:.5rem 0;font-size:12px">Collecting baseline…</div>'; return; }
+  const variances = [];
+  STORES.filter(st => facilityActive[st]).forEach(st => {
+    skus.forEach(s => {
+      const rate = consumption[s.id]?.[st] || 0;
+      if(!rate) return;
+      const expected = rate * daysDiff;
+      const oldStock = stockSnapshot[st]?.[s.id];
+      if(oldStock === undefined) return;
+      const actual = oldStock - (inventory[s.id][st] || 0);
+      const pct = expected > 0 ? ((actual - expected) / expected * 100) : 0;
+      if(Math.abs(pct) > 50 && expected > 0.1) variances.push({s,st,actual:Math.round(actual*10)/10,expected:Math.round(expected*10)/10,pct:Math.round(pct)});
+    });
+  });
+  if(!variances.length) { el.innerHTML = '<div class="empty" style="padding:.5rem 0;font-size:12px;color:var(--gmid)">✓ No significant variances detected</div>'; return; }
+  variances.sort((a,b)=>Math.abs(b.pct)-Math.abs(a.pct));
+  el.innerHTML = variances.slice(0,5).map(v => {
+    const hi = v.pct > 0;
+    return `<div class="alert-item" style="padding:6px 0">
+      <div class="alert-icon" style="background:${hi?'var(--rbg)':'var(--bbg)'}">
+        <svg width="12" height="12" fill="none" stroke="${hi?'var(--rmid)':'var(--bmid)'}" stroke-width="2" viewBox="0 0 24 24">${hi?'<polyline points="23 6 13.5 15.5 8.5 10.5 1 18"/>':'<polyline points="23 18 13.5 8.5 8.5 13.5 1 6"/>'}</svg>
+      </div>
+      <div class="alert-body">
+        <div class="alert-title" style="font-size:12px">${v.s.name.split(',').slice(-1)[0].trim()} · ${NAMES[v.st]}</div>
+        <div class="alert-desc" style="font-size:11px">${v.actual}u used vs ${v.expected}u expected (${v.pct>0?'+':''}${v.pct}%)</div>
+      </div>
+      <span class="badge" style="background:${hi?'var(--rbg)':'var(--bbg)'};color:${hi?'var(--red)':'var(--blue)'}">${hi?'↑ Spike':'↓ Slow'}</span>
+    </div>`;
+  }).join('') + (variances.length>5?`<div style="font-size:11px;color:var(--faint);padding:4px 0">+${variances.length-5} more</div>`:'');
+}
+
+// ─── Bulk SKU upload ──────────────────────────────────────────
+function openBulkSkuUpload() {
+  const input = document.createElement('input');
+  input.type='file'; input.accept='.xlsx,.xls,.csv';
+  input.onchange=function(){ processBulkSkuFile(input.files[0]); };
+  input.click();
+}
+function processBulkSkuFile(file) {
+  if(!file||!window.XLSX){toast('SheetJS not loaded');return;}
+  const reader=new FileReader();
+  reader.onload=function(e){
+    try{
+      const wb=XLSX.read(e.target.result,{type:'array'});
+      const rows=XLSX.utils.sheet_to_json(wb.Sheets[wb.SheetNames[0]],{defval:''});
+      let added=0;
+      rows.forEach(row=>{
+        const code=String(row['SKU Code']||row['code']||'').trim();
+        const name=String(row['SKU Name']||row['name']||'').trim();
+        const cat=String(row['Category']||row['cat']||'Washing Machine').trim();
+        if(!code||!name||skus.find(s=>s.code===code))return;
+        const id=nextId++;
+        skus.push({id,skuid:'SKU'+String(id).padStart(3,'0'),code,name,cat,threshold:21});
+        inventory[id]={WH:0,DS1:0,DS2:0,DS3:0};
+        consumption[id]={DS1:0,DS2:0,DS3:0};
+        added++;
+      });
+      renderAll();
+      toast(added+' SKUs added');
+    }catch(e){toast('Error: '+e.message);}
+  };
+  reader.readAsArrayBuffer(file);
+}
+
+
 
 // Purge any dev-mode sessions saved by old code versions
 try {
