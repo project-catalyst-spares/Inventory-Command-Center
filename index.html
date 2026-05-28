@@ -642,7 +642,7 @@ th.sort-desc::after{content:' ↓';opacity:1;color:var(--bmid)}
       </div>
     </div>
     <div style="font-size:12px;font-weight:500;color:#c8c7c0">Inventory Anchor</div>
-    <div style="font-size:10px;color:#6b6b77;margin-top:2px">Dark Stores for Spares</div>
+    <div style="font-size:11px;color:#c8c7c0;font-weight:500;letter-spacing:.2px;margin-top:3px">Dark Stores for Spares</div>
     <div class="logo-sub" style="margin-top:3px">Delhi NCR · GGN · LJP · NOI</div>
   </div>
   <div class="nav-section">Overview</div>
@@ -672,7 +672,7 @@ th.sort-desc::after{content:' ↓';opacity:1;color:var(--bmid)}
   </button>
 
   <div class="nav-admin-section">
-  <div class="nav-admin-toggle" onclick="toggleAdminNav(this)" title="Admin tools">
+  <div class="nav-admin-toggle" onclick="promptAdminPassword()" title="Admin tools — password protected">
     <span>Admin</span>
     <span class="nav-admin-arrow" id="admin-arrow">▶</span>
   </div>
@@ -2633,7 +2633,7 @@ function renderFacilityHealth(){
       <div class="health-dot" style="background:${dotC}"></div>
       <div class="health-info">
         <div class="health-name">${NAMES[loc]}<span style="font-size:10px;color:var(--faint);font-weight:400;margin-left:6px">${CODES[loc]||''}</span></div>
-        <div class="health-sub">Wtd. Avg DOI ${avg}d · ${crit} critical, ${warn} warnings</div>
+        <div class="health-sub">DOI ${avg}d · ${crit} critical, ${warn} warnings</div>
         <div class="progress-track"><div class="progress-fill" style="width:${pct}%;background:${dotC}"></div></div>
       </div>
       <span class="badge badge-${h}">${h==='crit'?'Critical':h==='warn'?'At Risk':'Healthy'}</span>
@@ -2672,7 +2672,7 @@ function renderFacilityStats(){
   document.getElementById('facility-stats').innerHTML=`
     <div class="fstat"><div class="fstat-val">${totalStock.toLocaleString()}</div><div class="fstat-label">Total Units</div></div>
     <div class="fstat"><div class="fstat-val" style="color:var(${isStore?(crit>0?'--rmid':warn>0?'--amid':'--gmid'):'--bmid'})">${isStore?crit:'—'}</div><div class="fstat-label">Critical SKUs</div></div>
-    <div class="fstat"><div class="fstat-val">${isStore?avgDoi:'—'}</div><div class="fstat-label">Wtd. Avg DOI (days)</div></div>
+    <div class="fstat"><div class="fstat-val">${isStore?avgDoi:'—'}</div><div class="fstat-label">DOI (days)</div></div>
   `;
 }
 
@@ -4013,6 +4013,9 @@ function onAuthSuccess(user) {
     }));
   } catch(e){}
 
+  // Start / restart inactivity timer
+  resetInactivityTimer();
+
   // Hide auth gate, show app
   const gate = document.getElementById('auth-gate');
   if (gate) gate.style.display = 'none';
@@ -4075,15 +4078,90 @@ function checkExistingSession() {
   return false;
 }
 
-// Admin nav toggle
-function toggleAdminNav(el) {
-  const items  = document.getElementById('admin-nav-items');
-  const arrow  = document.getElementById('admin-arrow');
+// Admin nav — password gated
+let adminUnlocked = false;
+
+function promptAdminPassword() {
+  const items = document.getElementById('admin-nav-items');
+  const arrow = document.getElementById('admin-arrow');
   if (!items) return;
-  const isOpen = items.classList.contains('open');
-  items.classList.toggle('open', !isOpen);
-  if (arrow) arrow.classList.toggle('open', !isOpen);
+
+  // If already open, just toggle closed (no re-auth needed to close)
+  if (items.classList.contains('open')) {
+    items.classList.remove('open');
+    if (arrow) arrow.classList.remove('open');
+    adminUnlocked = false;
+    return;
+  }
+
+  // If session was recently unlocked (<5 min ago), skip re-auth
+  if (adminUnlocked) {
+    items.classList.add('open');
+    if (arrow) arrow.classList.add('open');
+    return;
+  }
+
+  const pw = prompt('Enter admin password to access Admin settings:');
+  if (pw === null) return;  // cancelled
+  if (pw !== 'ramboinprogress') {
+    toast('Incorrect password');
+    return;
+  }
+
+  adminUnlocked = true;
+  items.classList.add('open');
+  if (arrow) arrow.classList.add('open');
+
+  // Auto-lock admin section after 5 minutes
+  setTimeout(function() {
+    adminUnlocked = false;
+    const it = document.getElementById('admin-nav-items');
+    const ar = document.getElementById('admin-arrow');
+    if (it) { it.classList.remove('open'); }
+    if (ar) { ar.classList.remove('open'); }
+    toast('Admin section locked');
+  }, 5 * 60 * 1000);
 }
+
+
+// ─── Inactivity timeout (10 minutes) ─────────────────────────
+const INACTIVITY_MS = 10 * 60 * 1000;  // 10 minutes
+let inactivityTimer = null;
+let warningTimer    = null;
+
+function resetInactivityTimer() {
+  clearTimeout(inactivityTimer);
+  clearTimeout(warningTimer);
+  if (!currentUser) return;
+  // Warn at 9 min
+  warningTimer = setTimeout(function() {
+    toast('Session expires in 1 minute due to inactivity');
+  }, INACTIVITY_MS - 60000);
+  // Sign out at 10 min
+  inactivityTimer = setTimeout(function() {
+    showSessionExpired();
+  }, INACTIVITY_MS);
+}
+
+function showSessionExpired() {
+  currentUser = null;
+  try { sessionStorage.removeItem('inv_user'); } catch(e){}
+  // Show a friendlier expired overlay rather than full sign-in
+  const gate = document.getElementById('auth-gate');
+  const errEl = document.getElementById('auth-error');
+  const subEl = document.querySelector('.auth-sub');
+  if (subEl) subEl.textContent = 'Your session expired after 10 minutes of inactivity. Please sign in again.';
+  if (errEl) errEl.textContent = '';
+  if (gate) gate.style.display = 'flex';
+  const pill = document.getElementById('user-pill');
+  if (pill) pill.style.display = 'none';
+  if (window.google && google.accounts) google.accounts.id.disableAutoSelect();
+}
+
+// Track user activity — mouse, touch, keyboard
+['mousemove','mousedown','touchstart','keydown','scroll','click'].forEach(function(evt) {
+  document.addEventListener(evt, resetInactivityTimer, { passive: true });
+});
 
 // Purge any dev-mode sessions saved by old code versions
 try {
