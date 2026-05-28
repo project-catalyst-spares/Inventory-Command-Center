@@ -3293,14 +3293,13 @@ function updateNavBadges(){
 
 
 function renderSettingsPage() {
-  const critEl = document.getElementById('thresh-crit');
-  if (critEl && !critEl.dataset.init) {
-    critEl.value = CRIT_THRESHOLD;
-    critEl.dataset.init = '1';
-  }
-  const btn1 = document.getElementById('theme-toggle-btn');
-  const btn2 = document.getElementById('settings-theme-btn');
-  const label = darkMode ? '☀️ Light' : '🌙 Dark';
+  // Always sync the threshold input to the live value
+  var critEl = document.getElementById('thresh-crit');
+  if (critEl) critEl.value = CRIT_THRESHOLD;
+  // Sync dark mode button labels
+  var label = darkMode ? '☀️ Light' : '🌙 Dark';
+  var btn1 = document.getElementById('theme-toggle-btn');
+  var btn2 = document.getElementById('settings-theme-btn');
   if (btn1) btn1.textContent = label;
   if (btn2) btn2.textContent = label;
 }
@@ -4308,9 +4307,16 @@ function toggleDarkMode() {
 })();
 
 // ─── Alert thresholds (editable) ─────────────────────────────
-var CRIT_THRESHOLD = 2;
+var CRIT_THRESHOLD = 2;  // default: 2 days
 
-// Override doiStatus to use editable critical threshold
+// Restore saved threshold — guard against 0 or invalid values
+(function() {
+  try {
+    var c = parseFloat(localStorage.getItem('inv_critThresh'));
+    if (c && c > 0 && c <= 30) CRIT_THRESHOLD = c;
+  } catch(e) {}
+})();
+
 function doiStatus(d, threshold) {
   if(d === Infinity) return 'na';
   if(d < CRIT_THRESHOLD) return 'crit';
@@ -4319,21 +4325,15 @@ function doiStatus(d, threshold) {
 }
 
 function saveAlertThresholds() {
-  const crit = parseFloat(document.getElementById('thresh-crit')?.value) || 2;
-  CRIT_THRESHOLD = Math.max(0.5, crit);
-  try { localStorage.setItem('inv_critThresh', CRIT_THRESHOLD); } catch(e){}
+  var v = parseFloat(document.getElementById('thresh-crit') && document.getElementById('thresh-crit').value);
+  if (!v || v <= 0 || v > 30) { toast('Enter a value between 1 and 30 days'); return; }
+  CRIT_THRESHOLD = v;
+  try { localStorage.setItem('inv_critThresh', String(CRIT_THRESHOLD)); } catch(e){}
   renderAll();
-  const el = document.getElementById('thresh-saved');
-  if(el) { el.textContent = '✓ Saved'; el.style.opacity = 1; setTimeout(()=>el.style.opacity=0,2000); }
-  toast('Alert thresholds updated');
+  var el = document.getElementById('thresh-saved');
+  if(el) { el.textContent = '✓ Saved'; el.style.opacity = 1; setTimeout(function(){el.style.opacity=0;},2000); }
+  toast('Critical threshold set to ' + CRIT_THRESHOLD + ' days');
 }
-
-(function() {
-  try {
-    const c = localStorage.getItem('inv_critThresh');
-    if(c) CRIT_THRESHOLD = parseFloat(c);
-  } catch(e){}
-})();
 
 // ─── Search Spare ─────────────────────────────────────────────
 function renderSearchSpare() {
@@ -4479,6 +4479,15 @@ function processBulkSkuFile(file) {
 }
 
 
+
+// Purge any bad critThresh values (e.g. 0) saved by old code
+try {
+  var _ct = parseFloat(localStorage.getItem('inv_critThresh'));
+  if (_ct !== null && (_ct <= 0 || _ct > 30 || isNaN(_ct))) {
+    localStorage.removeItem('inv_critThresh');
+    CRIT_THRESHOLD = 2;
+  }
+} catch(e) {}
 
 // Purge any dev-mode sessions saved by old code versions
 try {
