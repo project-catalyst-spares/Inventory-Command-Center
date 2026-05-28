@@ -817,9 +817,50 @@ let pendingWrites = {};  // { skuId_loc: { id, loc, qty } }
 let syncTimer = null;
 const SYNC_DELAY_MS = 1500;  // wait 1.5s after last change before syncing
 
+
+// ─── Restore stock from localStorage (instant, works offline) ─────────────────
+function restoreFromLocalStorage() {
+  try {
+    const dirtyKeys = JSON.parse(localStorage.getItem('inv_dirty_keys') || '[]');
+    if (!dirtyKeys.length) return false;
+    let restored = 0;
+    dirtyKeys.forEach(function(dk) {
+      const parts = dk.split('_');
+      if (parts.length < 2) return;
+      // id is the first part, loc is the last (handles ids like "12")
+      const loc   = parts[parts.length - 1];
+      const skuId = parseInt(parts.slice(0, parts.length - 1).join('_'));
+      const val   = localStorage.getItem('inv_stock_' + skuId + '_' + loc);
+      if (val !== null && inventory[skuId] && inventory[skuId][loc] !== undefined) {
+        inventory[skuId][loc] = parseInt(val) || 0;
+        restored++;
+      }
+    });
+    return restored > 0;
+  } catch(e) { return false; }
+}
+
+// Clear localStorage stock cache (called after Sheet confirms write)
+function clearLocalStockCache() {
+  try {
+    const dirtyKeys = JSON.parse(localStorage.getItem('inv_dirty_keys') || '[]');
+    dirtyKeys.forEach(function(dk) { localStorage.removeItem('inv_stock_' + dk.split('_')[0] + '_' + dk.split('_').slice(-1)[0]); });
+    localStorage.removeItem('inv_dirty_keys');
+  } catch(e){}
+}
+
 function queueSync(skuId, loc, qty, logEntry) {
   pendingWrites[skuId + '_' + loc] = { id: skuId, loc, qty };
   if (logEntry) window._pendingLogEntry = logEntry;
+  // Write to localStorage immediately — instant persistence without needing Sheet
+  try {
+    const key = 'inv_stock_' + skuId + '_' + loc;
+    localStorage.setItem(key, String(qty));
+    // Also update a dirty-flag so we know what to restore
+    let dirtyKeys = JSON.parse(localStorage.getItem('inv_dirty_keys') || '[]');
+    const dKey = skuId + '_' + loc;
+    if (!dirtyKeys.includes(dKey)) { dirtyKeys.push(dKey); localStorage.setItem('inv_dirty_keys', JSON.stringify(dirtyKeys)); }
+  } catch(e){}
   clearTimeout(syncTimer);
   syncTimer = setTimeout(flushSync, SYNC_DELAY_MS);
   setSyncStatus('pending');
@@ -842,6 +883,15 @@ async function flushSync() {
       await sheetGet(payload);
     }
     setSyncStatus('ok');
+    // On successful Sheet write, clear the localStorage dirty flags for these updates
+    try {
+      let dirtyKeys = JSON.parse(localStorage.getItem('inv_dirty_keys') || '[]');
+      updates.forEach(function(u) {
+        const dKey = u.id + '_' + u.loc;
+        dirtyKeys = dirtyKeys.filter(function(k) { return k !== dKey; });
+      });
+      localStorage.setItem('inv_dirty_keys', JSON.stringify(dirtyKeys));
+    } catch(e){}
   } catch(err) {
     setSyncStatus('error', err.message);
     console.error('Sync failed:', err);
@@ -962,6 +1012,7 @@ async function loadFromSheet() {
 
     nextId = skus.length ? Math.max(...skus.map(s => Number(s.id))) + 1 : 1;
     setSyncStatus('ok');
+    clearLocalStockCache(); // Sheet is now authoritative — clear local cache
     renderAll();
 
   } catch(err) {
@@ -2409,17 +2460,19 @@ function saveStockUpdate(id){
 
 function saveAllStockUpdates(){
   let changed=0;
+  const logE={facility:updateFacility,skusChanged:0,method:'bulk',summary:''};
   skus.forEach(s=>{
     const inp=document.getElementById(`upd-inp-${s.id}`);
-    if(inp){inventory[s.id][updateFacility]=parseInt(inp.value)||0;changed++;}
+    if(inp){
+      const val=parseInt(inp.value)||0;
+      inventory[s.id][updateFacility]=val;
+      queueSync(s.id,updateFacility,val);
+      changed++;
+    }
   });
+  logE.skusChanged=changed; logE.summary=changed+' SKUs updated via bulk entry';
+  window._pendingLogEntry=logE;
   logStockUpdate(updateFacility,changed,'bulk',`${changed} SKUs updated via bulk entry`);
-  // Queue sync for each changed SKU
-  skus.forEach(s=>{
-    const inp=document.getElementById(`upd-inp-${s.id}`);
-    if(inp) queueSync(s.id,updateFacility,parseInt(inp.value)||0);
-  });
-  queueSync.__logOverride={facility:updateFacility,skusChanged:changed,method:'bulk',summary:changed+' SKUs updated via bulk entry'};
   renderAll();
   const msg=document.getElementById('upd-saved-msg');
   msg.textContent='✓ All saved'; msg.style.opacity=1;
@@ -2498,6 +2551,8 @@ function replenish(id,store,qty){
   if(inventory[id].WH<qty){toast('Insufficient warehouse stock');return;}
   inventory[id].WH-=qty;inventory[id][store]+=qty;
   const s=skus.find(sk=>sk.id===id);
+  queueSync(id,'WH',   inventory[id].WH,    {facility:'WH',   skusChanged:1,method:'replenish',summary:'Sent '+qty+'u of '+(s?s.code:'SKU')+' → '+NAMES[store]});
+  queueSync(id,store,  inventory[id][store], {facility:store,  skusChanged:1,method:'replenish',summary:'Received '+qty+'u of '+(s?s.code:'SKU')+' from Warehouse'});
   logStockUpdate('WH',1,'replenish',`Sent ${qty} units of ${s?s.code:'SKU'} → ${NAMES[store]}`);
   logStockUpdate(store,1,'replenish',`Received ${qty} units of ${s?s.code:'SKU'} from Warehouse`);
   renderAll();toast(`Moved ${qty} units to ${NAMES[store]}`);
@@ -2516,9 +2571,8 @@ function replenishAllCritical(){
   if(done){
     logStockUpdate('WH',done,'replenish',`Auto-replenished ${done} critical SKUs to: ${[...storesHit].map(s=>NAMES[s]).join(', ')}`);
     storesHit.forEach(st=>logStockUpdate(st,done,'replenish',`Auto-replenish: ${done} critical SKUs received from Warehouse`));
-    // Sync all affected stores
     crits.forEach(a=>{
-      queueSync(a.sku.id,'WH',inventory[a.sku.id].WH);
+      queueSync(a.sku.id,'WH', inventory[a.sku.id].WH);
       queueSync(a.sku.id,a.store,inventory[a.sku.id][a.store]);
     });
   }
@@ -3378,6 +3432,8 @@ function rebuildFacilityFilters() {
   }
 }
 
+// Restore stock from localStorage immediately (before Sheet loads)
+if(restoreFromLocalStorage()) renderAll();
 renderAll();
 loadFromSheet();
 loadFacilityStatus();
