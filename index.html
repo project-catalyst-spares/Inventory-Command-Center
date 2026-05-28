@@ -1214,7 +1214,7 @@ const SYNC_DELAY_MS = 800;
 // Create your Client ID: console.cloud.google.com → APIs & Services
 // → Credentials → Create → OAuth Client ID → Web Application
 // → Authorised JS origins: https://YOUR-GITHUB-USERNAME.github.io
-const GOOGLE_CLIENT_ID = '43212016597-6etbog3jtjtq1gentupl9060d7sg0ok4.apps.googleusercontent.com';
+const GOOGLE_CLIENT_ID = 'YOUR_GOOGLE_CLIENT_ID_HERE.apps.googleusercontent.com';
 // Restrict access to this domain only (e.g. 'urbancompany.com')
 const ALLOWED_DOMAIN   = 'urbancompany.com';
 
@@ -3903,65 +3903,104 @@ if(restoreFromLocalStorage()) renderAll();
 // ═══════════════════════════════════════════════════════════════
 
 function startGoogleSignIn() {
-  const errEl = document.getElementById('auth-error');
+  const errEl  = document.getElementById('auth-error');
+  const btn    = document.querySelector('.auth-google-btn');
   if (errEl) errEl.textContent = '';
 
-  if (!GOOGLE_CLIENT_ID || GOOGLE_CLIENT_ID.includes('YOUR_GOOGLE_CLIENT_ID')) {
-    // Dev mode — skip auth if no Client ID configured
-    console.warn('No Google Client ID configured — auth bypassed');
-    onAuthSuccess({ name:'Dev User', email:'dev@urbancompany.com', picture:null, token:'dev' });
+  // ── Guard: Client ID must be real ─────────────────────────────
+  if (!GOOGLE_CLIENT_ID ||
+      GOOGLE_CLIENT_ID.includes('YOUR_GOOGLE_CLIENT_ID') ||
+      GOOGLE_CLIENT_ID.trim() === '') {
+    if (errEl) errEl.innerHTML =
+      '<strong>Setup required:</strong> No Google Client ID is configured.<br>' +
+      'Open index.html and replace <code>YOUR_GOOGLE_CLIENT_ID_HERE</code> with your real Client ID, then re-upload to GitHub.';
     return;
   }
 
-  if (!window.google || !google.accounts) {
-    if (errEl) errEl.textContent = 'Google Sign-In failed to load. Check your internet connection.';
+  // ── Guard: GSI library must be loaded ─────────────────────────
+  if (!window.google || !window.google.accounts || !window.google.accounts.id) {
+    if (errEl) errEl.textContent = 'Google Sign-In is still loading — please wait a moment and try again.';
+    // Retry automatically in 1.5s
+    setTimeout(startGoogleSignIn, 1500);
     return;
   }
 
-  google.accounts.id.initialize({
-    client_id:    GOOGLE_CLIENT_ID,
-    callback:     handleGoogleCredential,
-    auto_select:  false,
-    context:      'signin',
-    hd:           ALLOWED_DOMAIN,  // restricts picker to this domain
-  });
+  if (btn) { btn.disabled = true; btn.textContent = 'Opening Google…'; }
 
-  google.accounts.id.prompt(function(notification) {
-    if (notification.isNotDisplayed() || notification.isSkippedMoment()) {
-      // Fallback: show popup
-      google.accounts.id.renderButton(
-        document.getElementById('auth-error'),
-        { theme:'outline', size:'large', width:280 }
-      );
-    }
-  });
+  // ── Initialize & open OAuth popup ─────────────────────────────
+  try {
+    google.accounts.id.initialize({
+      client_id:   GOOGLE_CLIENT_ID,
+      callback:    handleGoogleCredential,
+      auto_select: false,
+      ux_mode:     'popup',   // popup is more reliable than redirect on static sites
+      context:     'signin',
+    });
+
+    // Use popup sign-in via OAuth2 token flow
+    const tokenClient = google.accounts.oauth2.initTokenClient({
+      client_id: GOOGLE_CLIENT_ID,
+      scope:     'openid email profile',
+      callback:  handleOAuthToken,
+      prompt:    'select_account',
+    });
+    tokenClient.requestAccessToken();
+  } catch(e) {
+    if (errEl) errEl.textContent = 'Sign-in error: ' + e.message;
+    if (btn) { btn.disabled = false; btn.innerHTML = googleBtnInner(); }
+  }
 }
 
-function handleGoogleCredential(response) {
+function googleBtnInner() {
+  return '<svg width="18" height="18" viewBox="0 0 48 48"><path fill="#EA4335" d="M24 9.5c3.54 0 6.71 1.22 9.21 3.6l6.85-6.85C35.9 2.38 30.47 0 24 0 14.62 0 6.51 5.38 2.56 13.22l7.98 6.19C12.43 13.72 17.74 9.5 24 9.5z"/><path fill="#4285F4" d="M46.98 24.55c0-1.57-.15-3.09-.38-4.55H24v9.02h12.94c-.58 2.96-2.26 5.48-4.78 7.18l7.73 6c4.51-4.18 7.09-10.36 7.09-17.65z"/><path fill="#FBBC05" d="M10.53 28.59c-.48-1.45-.76-2.99-.76-4.59s.27-3.14.76-4.59l-7.98-6.19C.92 16.46 0 20.12 0 24c0 3.88.92 7.54 2.56 10.78l7.97-6.19z"/><path fill="#34A853" d="M24 48c6.48 0 11.93-2.13 15.89-5.81l-7.73-6c-2.18 1.48-4.97 2.31-8.16 2.31-6.26 0-11.57-4.22-13.47-9.91l-7.98 6.19C6.51 42.62 14.62 48 24 48z"/></svg> Continue with Google';
+}
+
+async function handleOAuthToken(tokenResponse) {
+  const btn = document.querySelector('.auth-google-btn');
+  const errEl = document.getElementById('auth-error');
+
+  if (tokenResponse.error) {
+    const friendly = tokenResponse.error === 'access_denied'
+      ? 'Sign-in was cancelled.'
+      : 'Sign-in failed: ' + tokenResponse.error;
+    if (errEl) errEl.textContent = friendly;
+    if (btn) { btn.disabled = false; btn.innerHTML = googleBtnInner(); }
+    return;
+  }
+
   try {
-    // Decode JWT payload (no verification — client side only)
-    const payload = JSON.parse(atob(response.credential.split('.')[1]));
-    const email   = payload.email || '';
-    const domain  = email.split('@')[1] || '';
+    // Fetch user info using the access token
+    if (btn) btn.textContent = 'Verifying…';
+    const resp = await fetch('https://www.googleapis.com/oauth2/v3/userinfo', {
+      headers: { Authorization: 'Bearer ' + tokenResponse.access_token }
+    });
+    const profile = await resp.json();
+    const email  = profile.email  || '';
+    const domain = email.split('@')[1] || '';
 
     if (ALLOWED_DOMAIN && domain !== ALLOWED_DOMAIN) {
-      const errEl = document.getElementById('auth-error');
       if (errEl) errEl.textContent =
-        'Access denied. Only @' + ALLOWED_DOMAIN + ' accounts are allowed. You signed in as: ' + email;
+        'Access denied — ' + email + ' is not an @' + ALLOWED_DOMAIN + ' account. Please sign in with your work email.';
+      if (btn) { btn.disabled = false; btn.innerHTML = googleBtnInner(); }
+      google.accounts.oauth2.revoke(tokenResponse.access_token);
       return;
     }
 
     onAuthSuccess({
-      name:    payload.name    || email.split('@')[0],
+      name:    profile.name    || email.split('@')[0],
       email:   email,
-      picture: payload.picture || null,
-      token:   response.credential
+      picture: profile.picture || null,
+      token:   tokenResponse.access_token
     });
   } catch(e) {
-    const errEl = document.getElementById('auth-error');
-    if (errEl) errEl.textContent = 'Authentication error. Please try again.';
-    console.error('Auth error:', e);
+    if (errEl) errEl.textContent = 'Could not verify your account. Please try again.';
+    if (btn) { btn.disabled = false; btn.innerHTML = googleBtnInner(); }
   }
+}
+
+function handleGoogleCredential(response) {
+  // Legacy One Tap callback — redirect to token flow
+  handleOAuthToken({ access_token: response.credential });
 }
 
 function onAuthSuccess(user) {
@@ -4011,17 +4050,28 @@ function signOut() {
 }
 
 function checkExistingSession() {
-  // Restore session from sessionStorage (survives F5 refresh)
+  // Clear any stale dev-mode sessions on load — dev bypass no longer valid
   try {
     const saved = sessionStorage.getItem('inv_user');
     if (saved) {
       const user = JSON.parse(saved);
+      // Reject dev sessions and sessions from non-UC accounts
+      const domain = (user.email || '').split('@')[1] || '';
+      const isDevSession = user.token === 'dev' || user.email === 'dev@urbancompany.com';
+      const isRealUCEmail = ALLOWED_DOMAIN ? domain === ALLOWED_DOMAIN : true;
+
+      if (isDevSession || !isRealUCEmail) {
+        // Stale/invalid session — clear it and show auth gate
+        sessionStorage.removeItem('inv_user');
+        return false;
+      }
+
       if (user && user.email) {
         onAuthSuccess({ ...user, token: 'session' });
         return true;
       }
     }
-  } catch(e){}
+  } catch(e) {}
   return false;
 }
 
@@ -4034,6 +4084,17 @@ function toggleAdminNav(el) {
   items.classList.toggle('open', !isOpen);
   if (arrow) arrow.classList.toggle('open', !isOpen);
 }
+
+// Purge any dev-mode sessions saved by old code versions
+try {
+  const _s = sessionStorage.getItem('inv_user');
+  if (_s) {
+    const _u = JSON.parse(_s);
+    if (_u && (_u.token === 'dev' || _u.email === 'dev@urbancompany.com')) {
+      sessionStorage.removeItem('inv_user');
+    }
+  }
+} catch(e) {}
 
 // Only render after auth check
 if (!checkExistingSession()) {
