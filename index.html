@@ -3253,10 +3253,21 @@ function renderSkuManage(){
 }
 
 function toggleSkuActive(id) {
-  skuActive[id] = skuActive[id] === false ? true : false;
-  // Re-render everything that depends on alert state
+  // Explicit: undefined/true → false (inactive), false → true (active)
+  skuActive[id] = (skuActive[id] === false) ? true : false;
+  // Save to localStorage immediately — synchronous, works offline
+  try {
+    // Store as plain boolean values — avoid JSON quirks with undefined
+    var toStore = {};
+    Object.keys(skuActive).forEach(function(k) { toStore[k] = skuActive[k]; });
+    localStorage.setItem('inv_skuActive', JSON.stringify(toStore));
+  } catch(e) {}
+  // Save to Sheet
+  if (SYNC_ENABLED()) {
+    sheetGet({ action:'saveSettings', settings:{ skuActive: skuActive }}).catch(function(){});
+  }
   renderAll();
-  toast(skuActive[id] !== false ? 'SKU marked Active ✓' : 'SKU marked Inactive ✗');
+  toast(skuActive[id] === false ? 'SKU marked Inactive ✗' : 'SKU marked Active ✓');
 }
 
 // ─────────────────────────────────────────────
@@ -3847,8 +3858,11 @@ async function loadFacilityStatus() {
       const json = await sheetGet({ action: 'loadSettings' });
       if (json && json.ok && json.data) {
         if (json.data.facilityActive) {
-          // Apply Sheet values — overrides anything local
           Object.entries(json.data.facilityActive).forEach(([k,v]) => { facilityActive[k] = (v === true || v === 'true'); });
+        }
+        if (json.data.skuActive) {
+          Object.entries(json.data.skuActive).forEach(([k,v]) => { skuActive[Number(k)] = (v === true || v === 'true'); });
+          try { localStorage.setItem('inv_skuActive', JSON.stringify(skuActive)); } catch(e) {}
         }
         if (json.data.customFacilities && json.data.customFacilities.length) {
           json.data.customFacilities.forEach(f => {
@@ -4395,6 +4409,20 @@ var CRIT_THRESHOLD = 2;  // default: 2 days
   } catch(e) {}
 })();
 
+// Restore skuActive from localStorage — runs before first renderAll()
+(function() {
+  try {
+    var saved = localStorage.getItem('inv_skuActive');
+    if (saved) {
+      var parsed = JSON.parse(saved);
+      Object.keys(parsed).forEach(function(k) {
+        skuActive[Number(k)] = (parsed[k] === true || parsed[k] === 1);
+      });
+    }
+  } catch(e) {}
+})();
+
+
 function doiStatus(d, threshold) {
   if(d === Infinity) return 'na';
   if(d < CRIT_THRESHOLD) return 'crit';
@@ -4620,6 +4648,9 @@ function saveEmailSettings() {
 }
 
 
+
+// Restore skuActive from localStorage
+// skuActive restore moved to startup — see above
 
 // Purge any bad critThresh values (e.g. 0) saved by old code
 try {
