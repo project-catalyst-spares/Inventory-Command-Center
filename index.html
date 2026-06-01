@@ -1964,8 +1964,8 @@ function renderMetrics(){
   document.getElementById('metric-grid').innerHTML=`
     <div class="metric-card" onclick="switchPage('skus',document.querySelector('.nav-btn[title=\"Manage SKUs\"]'))" style="cursor:pointer" title="Open Manage SKUs">
       <div class="metric-label">Total SKUs</div>
-      <div class="metric-value">${skus.length}</div>
-      <div class="metric-sub">Across all locations</div>
+      <div class="metric-value">${skus.filter(s=>skuActive[s.id]!==false).length}</div>
+      <div class="metric-sub">Active · ${skus.length} total</div>
     </div>
     <div class="metric-card mv-red" onclick="goToInventoryFiltered('crit')" style="cursor:pointer" title="View critical SKUs">
       <div class="metric-label">Critical (DOI &lt; ${CRIT_THRESHOLD}d)</div>
