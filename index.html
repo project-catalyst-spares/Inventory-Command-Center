@@ -2000,8 +2000,10 @@ let nextId=1;
 // CORE CALCULATIONS
 // ─────────────────────────────────────────────
 function doi(skuId,store){
+  // Inactive SKUs never trigger Critical/Warning — DOI is shown as '—'
+  if(typeof skuActive!=='undefined' && skuActive[skuId]===false) return Infinity;
   const stk=(inventory[skuId]&&inventory[skuId][store])||0;
-  if(stk<=0)return 0;   // out of stock → 0 days of inventory → Critical, even with no consumption rate
+  if(stk<=0)return 0;   // out of stock (active SKU) → 0 days → Critical, even with no consumption rate
   const c=consumption[skuId]&&consumption[skuId][store];
   if(!c||c===0)return Infinity;
   return stk/c;
