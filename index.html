@@ -971,12 +971,44 @@ th.sort-desc::after{content:' ↓';opacity:1;color:var(--bmid)}
       <div style="max-height:280px;overflow-y:auto;margin-bottom:1rem">
         <div class="tbl-wrap" id="xls-preview-table"></div>
       </div>
+      <label style="display:flex;align-items:flex-start;gap:8px;font-size:12px;margin-bottom:.75rem;cursor:pointer">
+        <input type="checkbox" id="xls-zero-missing" checked onchange="runImportPreview()" style="margin-top:2px">
+        <span><strong>Set stock to 0 for active SKUs missing from this file</strong><br>
+        <span style="color:var(--muted)">The system export only includes SKUs with qty &gt; 0 — active SKUs absent from the file are treated as stocked out at this facility, so they show up in stockout alerts.</span></span>
+      </label>
       <div style="display:flex;gap:8px;align-items:center">
         <button class="btn btn-primary btn-sm" id="xls-apply-btn" onclick="applyXlsImport()">
           ✅ Apply to <span id="xls-apply-facility-label">Warehouse</span>
         </button>
         <button class="btn btn-sm" onclick="resetXlsImport()">Clear</button>
         <span id="xls-apply-msg" style="font-size:12px;color:var(--gmid);opacity:0;transition:opacity .3s"></span>
+      </div>
+    </div>
+  </div>
+
+  <!-- ── SKU MASTER SYNC CARD ── -->
+  <div class="card" style="margin-bottom:1rem" id="sku-master-card">
+    <div class="card-title">
+      <svg width="15" height="15" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path d="M21 16V8a2 2 0 0 0-1-1.73l-7-4a2 2 0 0 0-2 0l-7 4A2 2 0 0 0 3 8v8a2 2 0 0 0 1 1.73l7 4a2 2 0 0 0 2 0l7-4A2 2 0 0 0 21 16z"/><polyline points="3.27 6.96 12 12.01 20.73 6.96"/><line x1="12" y1="22.08" x2="12" y2="12"/></svg>
+      Sync SKU Master (All SKUs)
+    </div>
+    <p style="font-size:12px;color:var(--muted);margin-bottom:.75rem">
+      Upload the <strong>All SKUs</strong> master file (<span class="col-tag">Category</span> <span class="col-tag">SKU Codes</span> <span class="col-tag">SKU Desc</span> <span class="col-tag">Status</span>).
+      Active SKUs missing from the tracker are added to the Google Sheet with 0 stock — so they appear in stockout checks even if the stock export never includes them. SKUs marked <em>Not Active</em> are deactivated.
+    </p>
+    <div style="display:flex;gap:8px;align-items:center;flex-wrap:wrap">
+      <button class="btn btn-sm btn-primary" onclick="document.getElementById('master-file-input').click()">⬆ Upload All SKUs file</button>
+      <input type="file" id="master-file-input" accept=".xlsx,.xls,.csv" style="display:none" onchange="handleMasterFile(this.files[0])">
+      <span id="master-apply-msg" style="font-size:12px;color:var(--gmid);opacity:0;transition:opacity .3s"></span>
+    </div>
+    <div id="master-preview" style="display:none;margin-top:1rem">
+      <div class="import-stats" id="master-stats"></div>
+      <div style="max-height:220px;overflow-y:auto;margin:.5rem 0 1rem">
+        <div class="tbl-wrap" id="master-preview-table"></div>
+      </div>
+      <div style="display:flex;gap:8px;align-items:center">
+        <button class="btn btn-primary btn-sm" id="master-apply-btn" onclick="applyMasterSync()">✅ Sync SKU Master</button>
+        <button class="btn btn-sm" onclick="resetMasterSync()">Clear</button>
       </div>
     </div>
   </div>
@@ -1140,8 +1172,53 @@ th.sort-desc::after{content:' ↓';opacity:1;color:var(--bmid)}
 
 <!-- ── CONSUMPTION ── -->
 <div class="page" id="page-consumption">
+  <!-- Import consumption from Order History -->
+  <div class="card" style="margin-bottom:1rem" id="cons-import-card">
+    <div class="card-title">
+      <svg width="15" height="15" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><polyline points="22 12 18 12 15 21 9 3 6 12 2 12"/></svg>
+      Import Consumption from Order History
+    </div>
+    <p style="font-size:12px;color:var(--muted);margin-bottom:.75rem">
+      Upload the <strong>Order History</strong> file (<span class="col-tag">SKU Code</span> <span class="col-tag">SKU Qty</span> <span class="col-tag">Request Date</span>).
+      Daily rates use only the <strong>last 60 days</strong> of orders by default (rolling window, anchored to the latest order date) — older consumption is ignored, and SKUs with no orders in the window are reset to 0.
+    </p>
+    <div style="display:flex;gap:8px;align-items:center;flex-wrap:wrap">
+      <button class="btn btn-sm btn-primary" onclick="document.getElementById('cons-file-input').click()">⬆ Upload Order History</button>
+      <input type="file" id="cons-file-input" accept=".xlsx,.xls,.csv" style="display:none" onchange="handleConsFile(this.files[0])">
+      <span id="cons-apply-msg" style="font-size:12px;color:var(--gmid);opacity:0;transition:opacity .3s"></span>
+    </div>
+    <!-- Automated path: Orders tab lives in the Google Sheet -->
+    <div style="margin-top:.75rem;padding:.75rem 1rem;background:var(--bbg);border-radius:var(--rad);font-size:12px;color:var(--blue);display:flex;gap:10px;align-items:center;flex-wrap:wrap">
+      <span><strong>⚙ Automated:</strong> if the order history lives in an <strong>Orders</strong> tab of the connected Google Sheet, rates can be recalculated without any upload (and auto-refresh daily via the Apps Script trigger).</span>
+      <label style="white-space:nowrap">Last
+        <input type="number" id="cons-recalc-days" value="60" min="7" max="365" style="width:55px;font-family:inherit;font-size:12px;padding:3px 5px;border-radius:var(--rad);border:1px solid var(--border);background:var(--surface);color:var(--text)">
+        days</label>
+      <button class="btn btn-sm" id="cons-recalc-btn" onclick="recalcConsFromSheet()">♻ Recalculate from Sheet</button>
+    </div>
+    <div id="cons-import-preview" style="display:none;margin-top:1rem">
+      <div style="display:flex;gap:12px;align-items:center;flex-wrap:wrap;margin-bottom:.75rem">
+        <label style="font-size:12px;color:var(--muted)">Use only the last
+          <input type="number" id="cons-import-days" min="1" max="730" value="60" style="width:70px;font-family:inherit;font-size:12px;padding:4px 6px;border-radius:var(--rad);border:1px solid var(--border);background:var(--surface);color:var(--text)" oninput="recomputeConsPreview()">
+          days</label>
+        <label style="font-size:12px;color:var(--muted)">Apply rates to:
+          <select id="cons-apply-mode" onchange="recomputeConsPreview()" style="font-family:inherit;font-size:12px;padding:4px 6px;border-radius:var(--rad);border:1px solid var(--border);background:var(--surface);color:var(--text)">
+            <option value="split">All active stores — split evenly</option>
+            <option value="same">All active stores — same full rate</option>
+            <option value="DS1">Gurgaon (DS1) only</option>
+            <option value="DS2">Lajpat Nagar (DS2) only</option>
+            <option value="DS3">Noida (DS3) only</option>
+          </select>
+        </label>
+      </div>
+      <div class="import-stats" id="cons-import-stats"></div>
+      <div style="max-height:240px;overflow-y:auto;margin:.5rem 0 1rem">
+        <div class="tbl-wrap" id="cons-import-table"></div>
+      </div>
+      <button class="btn btn-primary btn-sm" id="cons-apply-btn" onclick="applyConsImport()">✅ Apply Consumption Rates</button>
+    </div>
+  </div>
   <div style="margin-bottom:1rem">
-    <p style="font-size:13px;color:var(--muted)">📊 View-only · 298 SKUs · Rates derived from historical orders data · DS2 & DS3 mirror DS1 baseline</p>
+    <p style="font-size:13px;color:var(--muted)">📊 Rates derived from historical orders data · used to compute DOI = stock ÷ daily rate</p>
   </div>
   <div class="filter-row" style="margin-bottom:.75rem">
     <input type="text" id="cons-search" placeholder="Search SKU…" oninput="renderConsumptionTable()">
@@ -1802,6 +1879,23 @@ async function loadFromSheet() {
       if (!consumption[s.id]) consumption[s.id] = {DS1:0,DS2:0,DS3:0};
     });
 
+    // If the Sheet has no rate for a SKU but a locally-imported rate exists
+    // (Order History import), use the local rate so alerts keep working.
+    try {
+      var consCache = JSON.parse(localStorage.getItem('inv_cons_cache') || 'null');
+      if (consCache) {
+        Object.entries(consCache).forEach(function([id, r]) {
+          id = Number(id);
+          if (!consumption[id]) return;
+          Object.keys(r).forEach(function(st) {
+            if ((consumption[id][st] || 0) === 0 && (Number(r[st]) || 0) > 0) {
+              consumption[id][st] = Number(r[st]);
+            }
+          });
+        });
+      }
+    } catch(e){}
+
     nextId = skus.length ? Math.max.apply(null, skus.map(function(s){ return Number(s.id); })) + 1 : 1;
 
     setLoadingMsg('Ready ✓', 100);
@@ -1906,9 +2000,11 @@ let nextId=1;
 // CORE CALCULATIONS
 // ─────────────────────────────────────────────
 function doi(skuId,store){
+  const stk=(inventory[skuId]&&inventory[skuId][store])||0;
+  if(stk<=0)return 0;   // out of stock → 0 days of inventory → Critical, even with no consumption rate
   const c=consumption[skuId]&&consumption[skuId][store];
   if(!c||c===0)return Infinity;
-  return inventory[skuId][store]/c;
+  return stk/c;
 }
 // doiStatus — see editable version below
 function doiLabel(d){
@@ -2008,8 +2104,10 @@ function renderAlerts(){
   if (statusF !== 'all') all = all.filter(a => a.status === statusF);
 
   if (!all.length) {
-    document.getElementById('alerts-list').innerHTML =
-      '<div class="empty">✅ No alerts match the selected filters</div>';
+    const anyCons = skus.some(s => consumption[s.id] && STORES.some(st => (consumption[s.id][st] || 0) > 0));
+    document.getElementById('alerts-list').innerHTML = anyCons
+      ? '<div class="empty">✅ No alerts match the selected filters</div>'
+      : '<div class="empty">⚠️ No consumption data loaded — go to <strong>Consumption Rates</strong> and import the Order History file to enable Critical / Warning alerts.</div>';
     return;
   }
 
@@ -2719,6 +2817,7 @@ function renderAll(){
 // ─────────────────────────────────────────────
 let xlsRows = [];
 let xlsPreviewData = [];
+let xlsMissingData = [];  // active SKUs not present in the uploaded file (likely stockouts)
 let xlsFacility = 'WH';  // selected facility for this upload
 
 // Auto-detect columns — flexible spellings
@@ -2832,11 +2931,22 @@ function runImportPreview() {
 
   xlsPreviewData = matched;
 
+  // SKUs that exist in the system but are NOT in the uploaded file.
+  // The system export omits 0-qty SKUs, so these are very likely stocked out.
+  const matchedIds = new Set(matched.map(m => m.sku.id));
+  const zeroMissing = document.getElementById('xls-zero-missing') ? document.getElementById('xls-zero-missing').checked : true;
+  xlsMissingData = skus.filter(s =>
+    !matchedIds.has(s.id) &&
+    (typeof skuActive === 'undefined' || skuActive[s.id] !== false) &&
+    (inventory[s.id][loc] || 0) > 0
+  ).map(s => ({ sku: s, oldQty: inventory[s.id][loc] }));
+
   // Stats
   document.getElementById('xls-stats').innerHTML =
     `<span class="istat istat-green">✅ ${matched.length} SKUs matched</span>` +
     (unmatched.length ? `<span class="istat istat-amber">⚠️ ${unmatched.length} not found</span>` : '') +
     (skipped.length   ? `<span class="istat istat-gray">⏭ ${skipped.length} skipped</span>` : '') +
+    (zeroMissing && xlsMissingData.length ? `<span class="istat" style="background:var(--rbg);color:var(--rmid)">🚫 ${xlsMissingData.length} not in file → set to 0 (stockout)</span>` : '') +
     `<span class="istat istat-gray">${xlsRows.length} rows in file</span>` +
     `<span class="istat" style="background:var(--bbg);color:var(--blue)">→ ${NAMES[loc]} (${CODES[loc]})</span>`;
 
@@ -2869,6 +2979,19 @@ function runImportPreview() {
       </tr>`
     ).join('');
   }
+  if (zeroMissing && xlsMissingData.length) {
+    rows_html += xlsMissingData.slice(0, 12).map(m =>
+      `<tr style="background:var(--rbg,#fdf0f0)">
+        <td class="mono" style="font-size:11px;color:var(--rmid)">${m.sku.code}</td>
+        <td class="mono" style="font-size:11px;color:var(--faint)">—</td>
+        <td style="font-size:12px;color:var(--rmid)">🚫 Not in file — stocked out</td>
+        <td class="num"><span style="color:var(--muted);font-size:11px">${m.oldQty}</span><span style="margin:0 4px;color:var(--faint)">→</span><strong style="color:var(--rmid)">0</strong></td>
+      </tr>`
+    ).join('');
+    if (xlsMissingData.length > 12) {
+      rows_html += `<tr><td colspan="4" style="text-align:center;color:var(--rmid);font-size:12px;padding:8px">… and ${xlsMissingData.length - 12} more SKUs will be set to 0</td></tr>`;
+    }
+  }
   if (!rows_html) {
     rows_html = `<tr><td colspan="4" class="empty">No usable rows found</td></tr>`;
   }
@@ -2883,33 +3006,405 @@ function runImportPreview() {
     </table>`;
 
   document.getElementById('xls-preview').style.display = 'block';
-  document.getElementById('xls-apply-btn').disabled = matched.length === 0;
+  document.getElementById('xls-apply-btn').disabled = matched.length === 0 && !(zeroMissing && xlsMissingData.length);
 }
 
 function applyXlsImport() {
-  if (!xlsPreviewData.length) return;
+  if (!xlsPreviewData.length && !xlsMissingData.length) return;
   const loc = xlsFacility;
   xlsPreviewData.forEach(m => {
     inventory[m.sku.id][loc] = m.newQty;
     queueSync(m.sku.id, loc, m.newQty);
   });
-  logStockUpdate(loc, xlsPreviewData.length, 'excel',
-    `Excel import: ${xlsPreviewData.length} SKUs updated`);
+  // Zero out active SKUs that were missing from the file (system export omits 0-qty SKUs)
+  const zeroMissing = document.getElementById('xls-zero-missing') ? document.getElementById('xls-zero-missing').checked : true;
+  let zeroed = 0;
+  if (zeroMissing) {
+    xlsMissingData.forEach(m => {
+      inventory[m.sku.id][loc] = 0;
+      queueSync(m.sku.id, loc, 0);
+      zeroed++;
+    });
+  }
+  logStockUpdate(loc, xlsPreviewData.length + zeroed, 'excel',
+    `Excel import: ${xlsPreviewData.length} SKUs updated` + (zeroed ? `, ${zeroed} missing SKUs set to 0` : ''));
   renderAll();
   const msg = document.getElementById('xls-apply-msg');
-  msg.textContent = `✓ ${xlsPreviewData.length} SKUs updated at ${NAMES[loc]}`;
+  msg.textContent = `✓ ${xlsPreviewData.length} SKUs updated` + (zeroed ? ` · ${zeroed} set to 0 (stockout)` : '') + ` at ${NAMES[loc]}`;
   msg.style.opacity = 1;
   setTimeout(() => msg.style.opacity = 0, 3000);
-  toast(`${xlsPreviewData.length} SKUs updated at ${NAMES[loc]} (${CODES[loc]})`);
+  toast(`${xlsPreviewData.length} updated` + (zeroed ? `, ${zeroed} zeroed` : '') + ` at ${NAMES[loc]} (${CODES[loc]})`);
 }
 
 function resetXlsImport() {
-  xlsRows = []; xlsPreviewData = [];
+  xlsRows = []; xlsPreviewData = []; xlsMissingData = [];
   document.getElementById('xls-drop').style.display = 'block';
   document.getElementById('xls-preview').style.display = 'none';
   document.getElementById('xls-detected-cols').innerHTML = '';
   document.getElementById('xls-apply-msg').style.opacity = 0;
   document.getElementById('xls-file-input').value = '';
+}
+
+// ─────────────────────────────────────────────
+// SKU MASTER SYNC (All SKUs file → tracker + Google Sheet)
+// ─────────────────────────────────────────────
+let masterNewSkus = [];      // active SKUs in file but not in tracker
+let masterDeactivate = [];   // tracker SKUs marked Not Active in file
+let masterReactivate = [];   // tracker SKUs marked Active in file but currently inactive
+
+function normalizeCat(c) {
+  c = String(c || '').replace(/\s*Repair\s*$/i, '').trim();
+  return c || 'Washing Machine';
+}
+
+function handleMasterFile(file) {
+  if (!file) return;
+  if (!window.XLSX) { toast('SheetJS not loaded — check internet connection'); return; }
+  const reader = new FileReader();
+  reader.onload = function(evt) {
+    try {
+      const wb = XLSX.read(evt.target.result, { type: 'array' });
+      const rows = XLSX.utils.sheet_to_json(wb.Sheets[wb.SheetNames[0]], { defval: '' });
+      if (!rows.length) { toast('File appears empty'); return; }
+      const headers = Object.keys(rows[0]);
+      const codeCol = detectXlsCol(headers, ['SKU Codes','SKU Code','Code','sku codes']);
+      const descCol = detectXlsCol(headers, ['SKU Desc','SKU Description','Description','SKU Name','Name']);
+      const catCol  = detectXlsCol(headers, ['Category','Cat']);
+      const statCol = detectXlsCol(headers, ['Status','Active']);
+      if (!codeCol) { toast('Could not find a SKU Codes column'); return; }
+
+      const codeMap = {};
+      skus.forEach(s => { codeMap[s.code.toLowerCase().trim()] = s; });
+
+      masterNewSkus = []; masterDeactivate = []; masterReactivate = [];
+      let alreadyOk = 0, inactiveSkipped = 0;
+      const seen = new Set();
+
+      rows.forEach(row => {
+        const code = String(row[codeCol] || '').trim();
+        if (!code || seen.has(code.toLowerCase())) return;
+        seen.add(code.toLowerCase());
+        const status = String(statCol ? row[statCol] : 'Active').trim().toLowerCase();
+        const isActive = status !== 'not active' && status !== 'inactive' && status !== 'no' && status !== 'false';
+        const existing = codeMap[code.toLowerCase()];
+        if (existing) {
+          const currentlyActive = (typeof skuActive === 'undefined') || skuActive[existing.id] !== false;
+          if (!isActive && currentlyActive)      masterDeactivate.push(existing);
+          else if (isActive && !currentlyActive) masterReactivate.push(existing);
+          else alreadyOk++;
+        } else if (isActive) {
+          masterNewSkus.push({
+            code,
+            name: String(descCol ? row[descCol] : '').trim() || code,
+            cat:  normalizeCat(catCol ? row[catCol] : '')
+          });
+        } else {
+          inactiveSkipped++;  // not in tracker and Not Active — nothing to do
+        }
+      });
+
+      document.getElementById('master-stats').innerHTML =
+        `<span class="istat istat-green">➕ ${masterNewSkus.length} new active SKUs to add</span>` +
+        (masterDeactivate.length ? `<span class="istat istat-amber">🚫 ${masterDeactivate.length} to mark Inactive</span>` : '') +
+        (masterReactivate.length ? `<span class="istat" style="background:var(--bbg);color:var(--blue)">↩ ${masterReactivate.length} to re-activate</span>` : '') +
+        `<span class="istat istat-gray">✓ ${alreadyOk} already in sync</span>` +
+        (inactiveSkipped ? `<span class="istat istat-gray">⏭ ${inactiveSkipped} inactive, not tracked</span>` : '');
+
+      let html = masterNewSkus.slice(0, 25).map(n =>
+        `<tr><td class="mono" style="font-size:11px">${n.code}</td>
+         <td style="font-size:12px">${n.name}</td>
+         <td><span class="badge badge-info" style="font-size:10px">${n.cat.replace('Washing Machine','WM')}</span></td>
+         <td style="font-size:11px;color:var(--gmid)">➕ Add (stock 0)</td></tr>`).join('');
+      if (masterNewSkus.length > 25) html += `<tr><td colspan="4" style="text-align:center;color:var(--faint);font-size:12px;padding:8px">… and ${masterNewSkus.length - 25} more</td></tr>`;
+      html += masterDeactivate.slice(0, 10).map(s =>
+        `<tr style="background:#fffbf2"><td class="mono" style="font-size:11px">${s.code}</td>
+         <td style="font-size:12px">${s.name.split(',').slice(-1)[0].trim()}</td><td></td>
+         <td style="font-size:11px;color:var(--amber)">🚫 Mark Inactive</td></tr>`).join('');
+      if (!html) html = '<tr><td colspan="4" class="empty">Everything already in sync ✓</td></tr>';
+      document.getElementById('master-preview-table').innerHTML = `<table>
+        <thead><tr><th>SKU Code</th><th>SKU Desc</th><th>Category</th><th>Action</th></tr></thead>
+        <tbody>${html}</tbody></table>`;
+      document.getElementById('master-preview').style.display = 'block';
+      document.getElementById('master-apply-btn').disabled =
+        !masterNewSkus.length && !masterDeactivate.length && !masterReactivate.length;
+    } catch(err) {
+      toast('Could not read file: ' + err.message);
+    }
+  };
+  reader.readAsArrayBuffer(file);
+}
+
+// Push newly added SKUs to the Google Sheet so they survive reloads
+async function syncNewSkusToSheet(newSkuObjs) {
+  if (!SYNC_ENABLED() || !newSkuObjs.length) return;
+  try {
+    const CHUNK = 15;
+    for (let i = 0; i < newSkuObjs.length; i += CHUNK) {
+      await sheetGet({ action: 'addSkus', skus: newSkuObjs.slice(i, i + CHUNK) });
+    }
+    toast(newSkuObjs.length + ' new SKUs saved to Google Sheet ✓');
+  } catch(err) {
+    toast('⚠ New SKUs added locally but NOT saved to Sheet — update the Apps Script (addSkus action). They will disappear on reload.');
+    console.error('addSkus sync failed:', err);
+  }
+}
+
+function applyMasterSync() {
+  const added = [];
+  masterNewSkus.forEach(n => {
+    const id = nextId++;
+    const sku = { id, skuid: 'SKU' + String(id).padStart(3, '0'), code: n.code, name: n.name, cat: n.cat, threshold: 21 };
+    skus.push(sku);
+    inventory[id]   = { WH: 0, DS1: 0, DS2: 0, DS3: 0 };
+    consumption[id] = { DS1: 0, DS2: 0, DS3: 0 };
+    LOCS.forEach(l => { if (inventory[id][l] === undefined) inventory[id][l] = 0; });
+    if (typeof skuActive !== 'undefined') skuActive[id] = true;
+    added.push(sku);
+  });
+  masterDeactivate.forEach(s => { skuActive[s.id] = false; });
+  masterReactivate.forEach(s => { skuActive[s.id] = true; });
+
+  // Persist skuActive (local + Sheet settings) and SKU cache
+  try {
+    localStorage.setItem('inv_skuActive', JSON.stringify(skuActive));
+    localStorage.setItem('inv_skus_cache', JSON.stringify(skus));
+  } catch(e){}
+  if (SYNC_ENABLED()) sheetGet({ action: 'saveSettings', settings: { skuActive: skuActive } }).catch(function(){});
+  syncNewSkusToSheet(added);
+
+  renderAll();
+  const msg = document.getElementById('master-apply-msg');
+  msg.textContent = `✓ ${added.length} added · ${masterDeactivate.length} deactivated · ${masterReactivate.length} re-activated`;
+  msg.style.opacity = 1;
+  setTimeout(() => msg.style.opacity = 0, 4000);
+  toast('SKU master synced');
+  resetMasterSync(true);
+}
+
+function resetMasterSync(keepMsg) {
+  masterNewSkus = []; masterDeactivate = []; masterReactivate = [];
+  document.getElementById('master-preview').style.display = 'none';
+  document.getElementById('master-preview-table').innerHTML = '';
+  document.getElementById('master-stats').innerHTML = '';
+  document.getElementById('master-file-input').value = '';
+  if (!keepMsg) document.getElementById('master-apply-msg').style.opacity = 0;
+}
+
+// ─────────────────────────────────────────────
+// CONSUMPTION IMPORT (Order History file → daily rates)
+// Rates are computed over a rolling window (default: last 60 days,
+// anchored to the most recent order date in the file).
+// ─────────────────────────────────────────────
+const CONS_DEFAULT_WINDOW = 60;   // days
+let consImportRows = null;        // [{key, qty, t}] — row-level so the window can be re-filtered
+let consImportUnmatched = 0;
+let consImportSpanDays = 0;       // full span of the uploaded file
+let consImportMaxT = null;        // most recent order date (ms)
+
+function excelDateToMs(v) {
+  if (v instanceof Date) return v.getTime();
+  if (typeof v === 'number' && v > 20000 && v < 80000) {
+    // Excel serial date (days since 1899-12-30)
+    return (v - 25569) * 86400000;
+  }
+  const t = Date.parse(v);
+  return isNaN(t) ? null : t;
+}
+
+function handleConsFile(file) {
+  if (!file) return;
+  if (!window.XLSX) { toast('SheetJS not loaded — check internet connection'); return; }
+  const reader = new FileReader();
+  reader.onload = function(evt) {
+    try {
+      const wb = XLSX.read(evt.target.result, { type: 'array' });
+      const rows = XLSX.utils.sheet_to_json(wb.Sheets[wb.SheetNames[0]], { defval: '' });
+      if (!rows.length) { toast('File appears empty'); return; }
+      const headers = Object.keys(rows[0]);
+      const codeCol = detectXlsCol(headers, ['SKU Code','SKU Codes','Code']);
+      const qtyCol  = detectXlsCol(headers, ['SKU Qty','Qty','Quantity','SKU Quantity']);
+      const dateCol = detectXlsCol(headers, ['Request Date','Delivery Date','Order Creation','Date']);
+      if (!codeCol || !qtyCol) { toast('Need SKU Code and SKU Qty columns'); return; }
+
+      const codeSet = new Set(skus.map(s => s.code.toLowerCase().trim()));
+      const parsed = [];
+      const unmatchedSet = new Set();
+      let minT = Infinity, maxT = -Infinity;
+
+      rows.forEach(row => {
+        const code = String(row[codeCol] || '').trim();
+        if (!code) return;
+        const q = parseFloat(String(row[qtyCol]).replace(/,/g, ''));
+        if (isNaN(q) || q <= 0) return;
+        let t = null;
+        if (dateCol) {
+          t = excelDateToMs(row[dateCol]);
+          if (t !== null) { if (t < minT) minT = t; if (t > maxT) maxT = t; }
+        }
+        const key = code.toLowerCase();
+        if (!codeSet.has(key)) { unmatchedSet.add(code); return; }
+        parsed.push({ key, qty: q, t });
+      });
+
+      consImportRows = parsed;
+      consImportUnmatched = unmatchedSet.size;
+      consImportMaxT = (maxT !== -Infinity) ? maxT : null;
+      consImportSpanDays = (minT !== Infinity && maxT > minT)
+        ? Math.max(1, Math.round((maxT - minT) / 86400000) + 1)
+        : 0;
+      const daysInput = document.getElementById('cons-import-days');
+      if (daysInput) daysInput.value = CONS_DEFAULT_WINDOW;
+      recomputeConsPreview();
+      document.getElementById('cons-import-preview').style.display = 'block';
+      if (!consImportMaxT) toast('⚠ No date column found — window cannot be applied, all rows will be used');
+    } catch(err) {
+      toast('Could not read file: ' + err.message);
+    }
+  };
+  reader.readAsArrayBuffer(file);
+}
+
+function consActiveStores() {
+  return STORES.filter(st => facilityActive[st] !== false);
+}
+
+// Filter rows to the selected window and aggregate per-SKU totals.
+// Returns { totals:{key:qty}, effectiveDays, windowDays, rowsUsed, from, to }
+function consWindowTotals() {
+  const windowDays = Math.max(1, Math.round(parseFloat(document.getElementById('cons-import-days').value) || CONS_DEFAULT_WINDOW));
+  let rows = consImportRows || [];
+  let effectiveDays = windowDays, from = null, to = null;
+
+  if (consImportMaxT) {
+    const cutoff = consImportMaxT - (windowDays - 1) * 86400000;
+    rows = rows.filter(r => r.t === null || r.t >= cutoff);
+    // If the file covers less history than the window, divide by what's actually there
+    effectiveDays = Math.min(windowDays, consImportSpanDays || windowDays);
+    from = new Date(Math.max(cutoff, consImportMaxT - (effectiveDays - 1) * 86400000));
+    to   = new Date(consImportMaxT);
+  } else if (consImportSpanDays) {
+    effectiveDays = consImportSpanDays;
+  }
+
+  const totals = {};
+  rows.forEach(r => { totals[r.key] = (totals[r.key] || 0) + r.qty; });
+  return { totals, effectiveDays, windowDays, rowsUsed: rows.length, from, to };
+}
+
+function buildConsRates() {
+  // Returns { skuId: {DS1:…, DS2:…, …} } based on the selected apply mode
+  const w = consWindowTotals();
+  const mode = document.getElementById('cons-apply-mode').value;
+  const stores = consActiveStores();
+  const out = {};
+  skus.forEach(s => {
+    const tot = w.totals[s.code.toLowerCase().trim()];
+    if (!tot) return;
+    const rate = tot / w.effectiveDays;
+    const r = {};
+    if (mode === 'split') {
+      stores.forEach(st => r[st] = Math.round(rate / stores.length * 10000) / 10000);
+    } else if (mode === 'same') {
+      stores.forEach(st => r[st] = Math.round(rate * 10000) / 10000);
+    } else {
+      r[mode] = Math.round(rate * 10000) / 10000;  // single store; others untouched
+    }
+    out[s.id] = r;
+  });
+  return out;
+}
+
+function recomputeConsPreview() {
+  if (!consImportRows) return;
+  const w = consWindowTotals();
+  const rates = buildConsRates();
+  const matchedCount = Object.keys(rates).length;
+  const fmt = d => d ? d.toLocaleDateString([], {day:'numeric',month:'short'}) : '';
+  const rangeLabel = (w.from && w.to) ? ` (${fmt(w.from)} → ${fmt(w.to)})` : '';
+  document.getElementById('cons-import-stats').innerHTML =
+    `<span class="istat istat-green">✅ ${matchedCount} SKUs consumed in window</span>` +
+    (consImportUnmatched ? `<span class="istat istat-amber">⚠️ ${consImportUnmatched} codes not in tracker</span>` : '') +
+    `<span class="istat" style="background:var(--bbg);color:var(--blue)">📅 Last ${w.effectiveDays} days${rangeLabel}</span>` +
+    `<span class="istat istat-gray">${w.rowsUsed} order rows in window / ${consImportRows.length} total</span>` +
+    (w.effectiveDays < w.windowDays ? `<span class="istat istat-amber">⚠ File only covers ${w.effectiveDays} days</span>` : '');
+
+  // Top 10 preview
+  const top = skus
+    .filter(s => rates[s.id])
+    .map(s => ({ s, tot: w.totals[s.code.toLowerCase().trim()] }))
+    .sort((a, b) => b.tot - a.tot).slice(0, 10);
+  document.getElementById('cons-import-table').innerHTML = `<table>
+    <thead><tr><th>SKU Code</th><th>SKU Name</th><th class="num">Used in window</th><th class="num">Daily rate</th></tr></thead>
+    <tbody>${top.map(x => `<tr>
+      <td class="mono" style="font-size:11px">${x.s.code}</td>
+      <td style="font-size:12px">${x.s.name.split(',').slice(-1)[0].trim()}</td>
+      <td class="num mono" style="font-size:11px">${x.tot}</td>
+      <td class="num mono" style="font-size:11px;color:var(--blue)">${Math.round(x.tot / w.effectiveDays * 1000) / 1000}/day</td>
+    </tr>`).join('')}</tbody></table>`;
+  document.getElementById('cons-apply-btn').disabled = matchedCount === 0;
+}
+
+async function applyConsImport() {
+  if (!consImportRows) return;
+  const rates = buildConsRates();
+  const mode = document.getElementById('cons-apply-mode').value;
+  const stores = (mode === 'split' || mode === 'same') ? consActiveStores() : [mode];
+  const updates = [];
+
+  // SKUs with consumption in the window get the new rate.
+  // SKUs with NO consumption in the window get 0 (their rate is stale).
+  skus.forEach(s => {
+    const id = s.id;
+    if (!consumption[id]) consumption[id] = { DS1: 0, DS2: 0, DS3: 0 };
+    if (rates[id]) {
+      Object.entries(rates[id]).forEach(([st, v]) => { consumption[id][st] = v; });
+      updates.push(Object.assign({ id }, consumption[id]));
+    } else {
+      let changed = false;
+      stores.forEach(st => { if ((consumption[id][st] || 0) > 0) { consumption[id][st] = 0; changed = true; } });
+      if (changed) updates.push(Object.assign({ id }, consumption[id]));
+    }
+  });
+
+  // Cache locally so alerts keep working even if the Sheet can't store rates yet
+  try { localStorage.setItem('inv_cons_cache', JSON.stringify(consumption)); } catch(e){}
+
+  renderAll();
+  toast(updates.length + ' SKU consumption rates applied — alerts recalculated');
+
+  if (SYNC_ENABLED()) {
+    try {
+      const CHUNK = 15;
+      for (let i = 0; i < updates.length; i += CHUNK) {
+        await sheetGet({ action: 'updateConsumption', updates: updates.slice(i, i + CHUNK) });
+      }
+      toast('Consumption rates saved to Google Sheet ✓');
+    } catch(err) {
+      toast('⚠ Rates applied on this device only — add the updateConsumption action to your Apps Script to save them to the Sheet.');
+      console.error('updateConsumption sync failed:', err);
+    }
+  }
+  const msg = document.getElementById('cons-apply-msg');
+  if (msg) { msg.textContent = '✓ Rates applied'; msg.style.opacity = 1; setTimeout(() => msg.style.opacity = 0, 3000); }
+}
+
+// ── Fully automated path: recalc rates from the Orders tab in the Sheet ──
+// Requires the recalcConsumption action in Apps Script (see AppsScript_additions.gs)
+// and an "Orders" tab in the same Google Sheet holding the order history.
+async function recalcConsFromSheet() {
+  if (!SYNC_ENABLED()) { toast('No Google Sheet connected'); return; }
+  const winEl = document.getElementById('cons-recalc-days');
+  const windowDays = Math.max(1, Math.round(parseFloat(winEl && winEl.value) || CONS_DEFAULT_WINDOW));
+  const btn = document.getElementById('cons-recalc-btn');
+  if (btn) { btn.disabled = true; btn.textContent = '↻ Recalculating…'; }
+  try {
+    const res = await sheetGet({ action: 'recalcConsumption', windowDays: windowDays });
+    toast('✓ Rates recalculated from Sheet (' + ((res && res.updated) || 0) + ' SKUs, last ' + windowDays + ' days)');
+    await loadFromSheet();   // pull the fresh rates back into the app
+  } catch(err) {
+    toast('⚠ Recalc failed — make sure the Apps Script has the recalcConsumption action and the Sheet has an Orders tab. (' + err.message + ')');
+  }
+  if (btn) { btn.disabled = false; btn.textContent = '♻ Recalculate from Sheet'; }
 }
 
 // ─────────────────────────────────────────────
@@ -3556,8 +4051,7 @@ function onAuthSuccess(user) {
     }));
   } catch(e){}
 
-  // Start / restart inactivity timer
-  resetInactivityTimer();
+  // (Inactivity timer removed — session never expires due to inactivity)
 
   // Hide auth gate, show app
   const gate = document.getElementById('auth-gate');
@@ -3672,44 +4166,10 @@ function promptAdminPassword() {
 }
 
 
-// ─── Inactivity timeout (10 minutes) ─────────────────────────
-const INACTIVITY_MS = 10 * 60 * 1000;  // 10 minutes
-let inactivityTimer = null;
-let warningTimer    = null;
-
-function resetInactivityTimer() {
-  clearTimeout(inactivityTimer);
-  clearTimeout(warningTimer);
-  if (!currentUser) return;
-  // Warn at 9 min
-  warningTimer = setTimeout(function() {
-    toast('Session expires in 1 minute due to inactivity');
-  }, INACTIVITY_MS - 60000);
-  // Sign out at 10 min
-  inactivityTimer = setTimeout(function() {
-    showSessionExpired();
-  }, INACTIVITY_MS);
-}
-
-function showSessionExpired() {
-  currentUser = null;
-  try { sessionStorage.removeItem('inv_user'); } catch(e){}
-  // Show a friendlier expired overlay rather than full sign-in
-  const gate = document.getElementById('auth-gate');
-  const errEl = document.getElementById('auth-error');
-  const subEl = document.querySelector('.auth-sub');
-  if (subEl) subEl.textContent = 'Your session expired after 10 minutes of inactivity. Please sign in again.';
-  if (errEl) errEl.textContent = '';
-  if (gate) gate.style.display = 'flex';
-  const pill = document.getElementById('user-pill');
-  if (pill) pill.style.display = 'none';
-  if (window.google && google.accounts) google.accounts.id.disableAutoSelect();
-}
-
-// Track user activity — mouse, touch, keyboard
-['mousemove','mousedown','touchstart','keydown','scroll','click'].forEach(function(evt) {
-  document.addEventListener(evt, resetInactivityTimer, { passive: true });
-});
+// ─── Inactivity timeout — REMOVED ─────────────────────────────
+// Sessions no longer expire due to inactivity. The session persists
+// for the lifetime of the browser tab (sessionStorage).
+function resetInactivityTimer() { /* no-op — inactivity logout removed */ }
 // ─── Dark mode ────────────────────────────────────────────────
 var darkMode = false;
 function toggleDarkMode() {
@@ -3899,17 +4359,23 @@ function processBulkSkuFile(file) {
       const wb=XLSX.read(e.target.result,{type:'array'});
       const rows=XLSX.utils.sheet_to_json(wb.Sheets[wb.SheetNames[0]],{defval:''});
       let added=0;
+      const addedSkus=[];
       rows.forEach(row=>{
-        const code=String(row['SKU Code']||row['code']||'').trim();
-        const name=String(row['SKU Name']||row['name']||'').trim();
-        const cat=String(row['Category']||row['cat']||'Washing Machine').trim();
+        const code=String(row['SKU Code']||row['SKU Codes']||row['code']||'').trim();
+        const name=String(row['SKU Name']||row['SKU Desc']||row['name']||'').trim();
+        const cat=normalizeCat(String(row['Category']||row['cat']||'Washing Machine').trim());
         if(!code||!name||skus.find(s=>s.code===code))return;
         const id=nextId++;
-        skus.push({id,skuid:'SKU'+String(id).padStart(3,'0'),code,name,cat,threshold:21});
+        const sku={id,skuid:'SKU'+String(id).padStart(3,'0'),code,name,cat,threshold:21};
+        skus.push(sku);
         inventory[id]={WH:0,DS1:0,DS2:0,DS3:0};
         consumption[id]={DS1:0,DS2:0,DS3:0};
+        if(typeof skuActive!=='undefined')skuActive[id]=true;
+        addedSkus.push(sku);
         added++;
       });
+      try{localStorage.setItem('inv_skus_cache',JSON.stringify(skus));}catch(e){}
+      syncNewSkusToSheet(addedSkus);
       renderAll();
       toast(added+' SKUs added');
     }catch(e){toast('Error: '+e.message);}
