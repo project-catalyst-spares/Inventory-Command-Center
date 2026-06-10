@@ -890,6 +890,7 @@ th.sort-desc::after{content:' ↓';opacity:1;color:var(--bmid)}
     </select>
     <input type="text" id="fac-search" placeholder="Search SKU…" oninput="renderFacilityTable()">
     <span class="result-count" id="fac-count"></span>
+    <button class="btn btn-sm" onclick="downloadFacilityTable()" title="Download the table below as Excel (respects filters & sort)">⬇ Download</button>
     <button class="btn btn-sm btn-green" onclick="switchPage('update', document.querySelector('.nav-btn:nth-child(6)'))">+ Update Stock</button>
   </div>
   <div class="tbl-wrap" id="facility-table"></div>
@@ -2242,7 +2243,9 @@ function renderFacilityStats(){
   `;
 }
 
-function renderFacilityTable(){
+// Shared by the table renderer and the download button — guarantees the
+// export contains exactly what's displayed (same facility, filters, sort).
+function getFacilityTableRows(){
   const loc=activeFacility;
   const isStore=STORES.includes(loc);
   const search=(document.getElementById('fac-search').value||'').toLowerCase();
@@ -2259,12 +2262,18 @@ function renderFacilityTable(){
     return true;
   });
 
-  document.getElementById('fac-count').textContent=rows.length+' SKUs';
-
-  // Apply sort before rendering
+  // Apply sort
   if (facSort.col==='stock') rows=applySort(rows,s=>inventory[s.id][loc]||0,facSort.dir);
   else if (facSort.col==='doi'&&isStore) rows=applySort(rows,s=>{const d=doi(s.id,loc);return d===Infinity?9999:d;},facSort.dir);
   else if (facSort.col==='name') rows=applySort(rows,s=>s.name.split(',').slice(-1)[0].trim(),facSort.dir);
+
+  return {rows,loc,isStore};
+}
+
+function renderFacilityTable(){
+  const {rows,loc,isStore}=getFacilityTableRows();
+
+  document.getElementById('fac-count').textContent=rows.length+' SKUs';
 
   const doiCol=isStore?`<th class="num ${sortClass(facSort,'doi')}" onclick="toggleSort(facSort,'doi',renderFacilityTable)">DOI</th><th>Status</th>`:'';
   document.getElementById('facility-table').innerHTML=`
@@ -2298,6 +2307,50 @@ function renderFacilityTable(){
       </tbody>
     </table>
   `;
+}
+
+// ── Download the facility table exactly as displayed ──────────────────
+function downloadFacilityTable(){
+  const {rows,loc,isStore}=getFacilityTableRows();
+  if(!rows.length){toast('Nothing to download — no SKUs match the current filters');return;}
+
+  const header=['SKU Code','SKU Name','Category','Stock'];
+  if(isStore)header.push('Rate (u/day)','DOI (days)','Status');
+  else header.push('WH Cover (days)');
+
+  const aoa=[header].concat(rows.map(s=>{
+    const stock=inventory[s.id][loc]||0;
+    const row=[s.code,s.name.split(',').slice(-1)[0].trim(),s.cat,stock];
+    if(isStore){
+      const d=doi(s.id,loc),st=doiStatus(d,s.threshold);
+      row.push(consumption[s.id][loc]||0,
+               d===Infinity?'—':Math.round(d*10)/10,
+               st==='crit'?'Critical':st==='warn'?'Warning':st==='na'?'N/A':'OK');
+    }else{
+      const rate=consumption[s.id]['DS1']||0;
+      row.push(rate?Math.round(stock/rate*10)/10:'—');
+    }
+    return row;
+  }));
+
+  const today=new Date(),pad=n=>String(n).padStart(2,'0');
+  const fname=`Facility_${CODES[loc]||loc}_${today.getFullYear()}-${pad(today.getMonth()+1)}-${pad(today.getDate())}`;
+
+  if(window.XLSX){
+    const ws=XLSX.utils.aoa_to_sheet(aoa);
+    ws['!cols']=[{wch:20},{wch:32},{wch:16},{wch:8},{wch:12},{wch:10},{wch:10}];
+    const wb=XLSX.utils.book_new();
+    XLSX.utils.book_append_sheet(wb,ws,(NAMES[loc]||loc).substring(0,31));
+    XLSX.writeFile(wb,fname+'.xlsx');
+  }else{
+    // Fallback: CSV if SheetJS failed to load
+    const csv=aoa.map(r=>r.map(v=>{v=String(v);return /[",\n]/.test(v)?'"'+v.replace(/"/g,'""')+'"':v;}).join(',')).join('\n');
+    const a=document.createElement('a');
+    a.href=URL.createObjectURL(new Blob(['\ufeff'+csv],{type:'text/csv;charset=utf-8'}));
+    a.download=fname+'.csv';
+    document.body.appendChild(a);a.click();a.remove();
+  }
+  toast(rows.length+' SKUs downloaded — '+(NAMES[loc]||loc));
 }
 
 // ─────────────────────────────────────────────
