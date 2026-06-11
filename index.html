@@ -890,6 +890,9 @@ th.sort-desc::after{content:' ↓';opacity:1;color:var(--bmid)}
     </select>
     <input type="text" id="fac-search" placeholder="Search SKU…" oninput="renderFacilityTable()">
     <span class="result-count" id="fac-count"></span>
+    <label style="display:flex;align-items:center;gap:5px;font-size:11px;color:var(--muted);cursor:pointer;white-space:nowrap">
+      <input type="checkbox" id="fac-show-inactive" onchange="renderFacilityTable()"> Show inactive SKUs
+    </label>
     <button class="btn btn-sm" onclick="downloadFacilityTable()" title="Download the table below as Excel (respects filters & sort)">⬇ Download</button>
     <button class="btn btn-sm btn-green" onclick="switchPage('update', document.querySelector('.nav-btn:nth-child(6)'))">+ Update Stock</button>
   </div>
@@ -2280,8 +2283,10 @@ function getFacilityTableRows(){
   const search=(document.getElementById('fac-search').value||'').toLowerCase();
   const statusF=document.getElementById('fac-filter-status').value;
   const catF=document.getElementById('fac-filter-cat').value;
+  const showInactive=document.getElementById('fac-show-inactive')?document.getElementById('fac-show-inactive').checked:false;
 
   let rows=skus.filter(s=>{
+    if(!showInactive && typeof skuActive!=='undefined' && skuActive[s.id]===false)return false;
     if(!s.name.toLowerCase().includes(search)&&!s.code.toLowerCase().includes(search))return false;
     if(catF!=='all'&&s.cat!==catF)return false;
     if(isStore&&statusF!=='all'){
@@ -2763,23 +2768,9 @@ function renderSkuManage(){
   `;
 }
 
-function toggleSkuActive(id) {
-  // Explicit: undefined/true → false (inactive), false → true (active)
-  skuActive[id] = (skuActive[id] === false) ? true : false;
-  // Save to localStorage immediately — synchronous, works offline
-  try {
-    // Store as plain boolean values — avoid JSON quirks with undefined
-    var toStore = {};
-    Object.keys(skuActive).forEach(function(k) { toStore[k] = skuActive[k]; });
-    localStorage.setItem('inv_skuActive', JSON.stringify(toStore));
-  } catch(e) {}
-  // Save to Sheet
-  if (SYNC_ENABLED()) {
-    sheetGet({ action:'saveSettings', settings:{ skuActive: skuActive }}).catch(function(){});
-  }
-  renderAll();
-  toast(skuActive[id] === false ? 'SKU marked Inactive ✗' : 'SKU marked Active ✓');
-}
+// toggleSkuActive is defined once in the admin section (password-guarded,
+// debounced Sheet save). It serves both the Manage SKUs table and the
+// Settings → SKU Active Status list.
 
 // ─────────────────────────────────────────────
 // ADD / EDIT / DELETE SKU
@@ -4314,6 +4305,8 @@ function toggleSkuActive(id) {
         .catch(function(){ toast('⚠ Could not save to Sheet — change applied locally only'); });
     }
   }, 1200);
+  const s = skus.find(x => x.id === id);
+  toast((s ? s.code + ' ' : '') + (skuActive[id] === false ? 'marked Inactive ✗' : 'marked Active ✓'));
   renderSkuActiveList();
   renderAll();
 }
