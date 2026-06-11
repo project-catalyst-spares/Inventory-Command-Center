@@ -1249,6 +1249,28 @@ th.sort-desc::after{content:' ↓';opacity:1;color:var(--bmid)}
 
 <!-- ── ALERT SETTINGS ── -->
 <div class="page" id="page-settings">
+  <!-- ── SKU ACTIVE / INACTIVE TOGGLES (admin only) ── -->
+  <div class="card">
+    <div class="card-title">
+      <svg width="14" height="14" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><rect x="1" y="5" width="22" height="14" rx="7"/><circle cx="16" cy="12" r="3"/></svg>
+      SKU Active Status
+      <span style="font-size:11px;font-weight:400;color:var(--faint);margin-left:4px">admin only — changes save to Google Sheet</span>
+    </div>
+    <p style="font-size:12px;color:var(--muted);margin-bottom:.75rem">
+      Inactive SKUs are excluded from stockout alerts, Critical/Warning counts, and DOI everywhere. Toggling here takes effect immediately for all users.
+    </p>
+    <div class="filter-row" style="margin-bottom:.5rem">
+      <select id="skuact-filter" onchange="renderSkuActiveList()">
+        <option value="all">All SKUs</option>
+        <option value="active">Active only</option>
+        <option value="inactive">Inactive only</option>
+      </select>
+      <input type="text" id="skuact-search" placeholder="Search SKU code or name…" oninput="renderSkuActiveList()">
+      <span class="result-count" id="skuact-count"></span>
+    </div>
+    <div id="skuact-list" style="max-height:380px;overflow-y:auto;border:1px solid var(--border);border-radius:var(--rad)"></div>
+    <p style="font-size:11px;color:var(--faint);margin-top:.5rem">💡 To bulk-update from the All SKUs master file, use “Sync SKU Master” on the Update Stock page.</p>
+  </div>
   <div class="card">
     <div class="card-title">
       <svg width="14" height="14" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 0 1-2.83 2.83l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-4 0v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 0 1-2.83-2.83l.06-.06A1.65 1.65 0 0 0 4.68 15a1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1 0-4h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 0 1 2.83-2.83l.06.06A1.65 1.65 0 0 0 9 4.68a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 4 0v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 0 1 2.83 2.83l-.06.06A1.65 1.65 0 0 0 19.4 9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 0 4h-.09a1.65 1.65 0 0 0-1.51 1z"/></svg>
@@ -1601,7 +1623,7 @@ let facSort={col:null,dir:1};   // facility view sort
 
 // ─── GOOGLE SHEETS SYNC CONFIG ───────────────────────────
 // Paste your Apps Script Web App URL here after deploying
-const SHEETS_URL = https://script.google.com/macros/s/AKfycbyv77xZU_tq22uKN6xKVYbTfveYvbojKBcYqwdObjuEVbLkXdmMufNaLgdnR7Hd4Fd-5w/exec; 
+const SHEETS_URL = 'https://script.google.com/macros/s/AKfycbyv77xZU_tq22uKN6xKVYbTfveYvbojKBcYqwdObjuEVbLkXdmMufNaLgdnR7Hd4Fd-5w/exec';   // e.g. 'https://script.google.com/macros/s/ABC123/exec'
 const SYNC_ENABLED = () => SHEETS_URL.trim().length > 0;
 
 // Pending writes queue — batches updates before sending to Sheet
@@ -1618,7 +1640,7 @@ const GOOGLE_CLIENT_ID = '43212016597-6etbog3jtjtq1gentupl9060d7sg0ok4.apps.goog
 const ALLOWED_DOMAIN   = 'urbancompany.com';
 
 let currentUser = null;  // { name, email, picture, token }
-const ADMIN_PAGES = ['consumption','skus','addFacility'];  // pages that need admin flag  // 0.8s — faster on mobile
+const ADMIN_PAGES = ['consumption','skus','settings','addFacility'];  // password-protected pages  // 0.8s — faster on mobile
 const IS_MOBILE = () => window.innerWidth <= 768 || /Mobi|Android/i.test(navigator.userAgent);
 
 
@@ -2043,6 +2065,10 @@ const PAGE_TITLES={settings:'Alert & Display Settings',search:'Search Spare',
   consumption:'Consumption Rates',skus:'Manage SKUs'
 };
 function switchPage(page,el){
+  // Admin pages require password — blocks deep links (e.g. dashboard cards)
+  if(ADMIN_PAGES.includes(page) && !adminUnlocked){
+    if(!requireAdmin())return;
+  }
   document.querySelectorAll('.page').forEach(p=>p.classList.remove('active'));
   document.getElementById('page-'+page).classList.add('active');
   document.querySelectorAll('.nav-btn').forEach(b=>b.classList.remove('active'));
@@ -2050,6 +2076,7 @@ function switchPage(page,el){
   document.getElementById('topbar-title').textContent=PAGE_TITLES[page]||page;
   try { sessionStorage.setItem('inv_lastPage', page); } catch(e){}
   renderAll();
+  if(page==='settings'&&typeof renderSkuActiveList==='function')renderSkuActiveList();
 }
 
 // ─────────────────────────────────────────────
@@ -2139,12 +2166,14 @@ function renderAlerts(){
       ? '<circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="12"/><line x1="12" y1="16" x2="12.01" y2="16"/>'
       : '<path d="M10.29 3.86L1.82 18a2 2 0 0 0 1.71 3h16.94a2 2 0 0 0 1.71-3L13.71 3.86a2 2 0 0 0-3.42 0z"/><line x1="12" y1="9" x2="12" y2="13"/>';
 
-    // Facility tags within this SKU
+    // Facility tags within this SKU — show units so it's clear whether the
+    // SKU is out of stock or in stock but below the DOI threshold
     const facTags = g.entries.map(e => {
       const city = CITIES[e.store];
+      const stockLbl = (e.stock||0)===0 ? 'out of stock' : (e.stock + ' in stock');
       return `<span class="badge badge-${e.status}" style="font-size:10px;padding:1px 7px;margin-right:3px">
         ${NAMES[e.store]}
-        <span style="font-size:9px;opacity:.75;margin-left:2px">${doiLabel(e.doi)}</span>
+        <span style="font-size:9px;opacity:.75;margin-left:2px">${stockLbl} · ${doiLabel(e.doi)}</span>
       </span>`;
     }).join('');
 
@@ -2309,30 +2338,24 @@ function renderFacilityTable(){
   `;
 }
 
-// ── Download the facility table exactly as displayed ──────────────────
+// ── Download the facility table EXACTLY as displayed ──────────────────
+// Reads the rendered table in the DOM, so the export always matches what's
+// on screen — same facility, filters, search, and sort. No logic duplication.
 function downloadFacilityTable(){
-  const {rows,loc,isStore}=getFacilityTableRows();
-  if(!rows.length){toast('Nothing to download — no SKUs match the current filters');return;}
+  const tbl=document.querySelector('#facility-table table');
+  if(!tbl){toast('Table not rendered yet');return;}
+  const headRow=[...tbl.querySelectorAll('thead th')].map(th=>th.textContent.replace(/[▲▼↕]/g,'').trim());
+  const bodyRows=[...tbl.querySelectorAll('tbody tr')].map(tr=>
+    [...tr.querySelectorAll('td')].map(td=>{
+      const txt=td.textContent.replace(/\s+/g,' ').trim();
+      const num=txt.replace(/,/g,'').replace(/d$/,'');           // "1,250" / "5.2d" → numeric
+      return txt!==''&&!isNaN(num)&&/[\d]/.test(num)?Number(num):txt;
+    })
+  );
+  if(!bodyRows.length){toast('Nothing to download — no SKUs match the current filters');return;}
 
-  const header=['SKU Code','SKU Name','Category','Stock'];
-  if(isStore)header.push('Rate (u/day)','DOI (days)','Status');
-  else header.push('WH Cover (days)');
-
-  const aoa=[header].concat(rows.map(s=>{
-    const stock=inventory[s.id][loc]||0;
-    const row=[s.code,s.name.split(',').slice(-1)[0].trim(),s.cat,stock];
-    if(isStore){
-      const d=doi(s.id,loc),st=doiStatus(d,s.threshold);
-      row.push(consumption[s.id][loc]||0,
-               d===Infinity?'—':Math.round(d*10)/10,
-               st==='crit'?'Critical':st==='warn'?'Warning':st==='na'?'N/A':'OK');
-    }else{
-      const rate=consumption[s.id]['DS1']||0;
-      row.push(rate?Math.round(stock/rate*10)/10:'—');
-    }
-    return row;
-  }));
-
+  const aoa=[headRow].concat(bodyRows);
+  const loc=activeFacility;
   const today=new Date(),pad=n=>String(n).padStart(2,'0');
   const fname=`Facility_${CODES[loc]||loc}_${today.getFullYear()}-${pad(today.getMonth()+1)}-${pad(today.getDate())}`;
 
@@ -2350,7 +2373,7 @@ function downloadFacilityTable(){
     a.download=fname+'.csv';
     document.body.appendChild(a);a.click();a.remove();
   }
-  toast(rows.length+' SKUs downloaded — '+(NAMES[loc]||loc));
+  toast(bodyRows.length+' rows downloaded — '+(NAMES[loc]||loc));
 }
 
 // ─────────────────────────────────────────────
@@ -2955,6 +2978,11 @@ function handleXlsFile(file) {
   reader.readAsArrayBuffer(file);
 }
 
+// Normalize SKU codes for matching: strips non-breaking spaces, collapses
+// internal whitespace, trims, lowercases. Prevents "in the dump but zeroed
+// as missing" mismatches caused by stray spaces or case differences.
+function normCode(c){return String(c==null?'':c).replace(/\u00a0/g,' ').replace(/\s+/g,' ').trim().toLowerCase();}
+
 function runImportPreview() {
   if (!xlsRows.length) return;
   const codeCol = xlsRows._codeCol;
@@ -2964,8 +2992,7 @@ function runImportPreview() {
   // Build lookup by code and skuid
   const codeMap = {};
   skus.forEach(s => {
-    codeMap[s.code.toLowerCase().trim()] = s;
-    codeMap[s.code.toLowerCase().trim()] = s;
+    codeMap[normCode(s.code)] = s;
   });
 
   const matched = [], unmatched = [], skipped = [];
@@ -2974,7 +3001,7 @@ function runImportPreview() {
     const rawCode = String(row[codeCol] || '').trim();
     if (!rawCode) { skipped.push(idx + 2); return; }
 
-    const sku = codeMap[rawCode.toLowerCase()];
+    const sku = codeMap[normCode(rawCode)];
     if (!sku) { unmatched.push(rawCode); return; }
 
     const v = parseFloat(String(row[qtyCol]).replace(/,/g, ''));
@@ -3129,7 +3156,7 @@ function handleMasterFile(file) {
       if (!codeCol) { toast('Could not find a SKU Codes column'); return; }
 
       const codeMap = {};
-      skus.forEach(s => { codeMap[s.code.toLowerCase().trim()] = s; });
+      skus.forEach(s => { codeMap[normCode(s.code)] = s; });
 
       masterNewSkus = []; masterDeactivate = []; masterReactivate = [];
       let alreadyOk = 0, inactiveSkipped = 0;
@@ -3137,11 +3164,11 @@ function handleMasterFile(file) {
 
       rows.forEach(row => {
         const code = String(row[codeCol] || '').trim();
-        if (!code || seen.has(code.toLowerCase())) return;
-        seen.add(code.toLowerCase());
+        if (!code || seen.has(normCode(code))) return;
+        seen.add(normCode(code));
         const status = String(statCol ? row[statCol] : 'Active').trim().toLowerCase();
         const isActive = status !== 'not active' && status !== 'inactive' && status !== 'no' && status !== 'false';
-        const existing = codeMap[code.toLowerCase()];
+        const existing = codeMap[normCode(code)];
         if (existing) {
           const currentlyActive = (typeof skuActive === 'undefined') || skuActive[existing.id] !== false;
           if (!isActive && currentlyActive)      masterDeactivate.push(existing);
@@ -3281,7 +3308,7 @@ function handleConsFile(file) {
       const dateCol = detectXlsCol(headers, ['Request Date','Delivery Date','Order Creation','Date']);
       if (!codeCol || !qtyCol) { toast('Need SKU Code and SKU Qty columns'); return; }
 
-      const codeSet = new Set(skus.map(s => s.code.toLowerCase().trim()));
+      const codeSet = new Set(skus.map(s => normCode(s.code)));
       const parsed = [];
       const unmatchedSet = new Set();
       let minT = Infinity, maxT = -Infinity;
@@ -3296,7 +3323,7 @@ function handleConsFile(file) {
           t = excelDateToMs(row[dateCol]);
           if (t !== null) { if (t < minT) minT = t; if (t > maxT) maxT = t; }
         }
-        const key = code.toLowerCase();
+        const key = normCode(code);
         if (!codeSet.has(key)) { unmatchedSet.add(code); return; }
         parsed.push({ key, qty: q, t });
       });
@@ -3353,7 +3380,7 @@ function buildConsRates() {
   const stores = consActiveStores();
   const out = {};
   skus.forEach(s => {
-    const tot = w.totals[s.code.toLowerCase().trim()];
+    const tot = w.totals[normCode(s.code)];
     if (!tot) return;
     const rate = tot / w.effectiveDays;
     const r = {};
@@ -3386,7 +3413,7 @@ function recomputeConsPreview() {
   // Top 10 preview
   const top = skus
     .filter(s => rates[s.id])
-    .map(s => ({ s, tot: w.totals[s.code.toLowerCase().trim()] }))
+    .map(s => ({ s, tot: w.totals[normCode(s.code)] }))
     .sort((a, b) => b.tot - a.tot).slice(0, 10);
   document.getElementById('cons-import-table').innerHTML = `<table>
     <thead><tr><th>SKU Code</th><th>SKU Name</th><th class="num">Used in window</th><th class="num">Daily rate</th></tr></thead>
@@ -4177,6 +4204,32 @@ function checkExistingSession() {
 
 // Admin nav — password gated
 let adminUnlocked = false;
+let adminLockTimer = null;
+
+// Prompts for the admin password; returns true if access is granted.
+// Unlock auto-expires after 5 minutes.
+function requireAdmin() {
+  if (adminUnlocked) return true;
+  const pw = prompt('Enter admin password:');
+  if (pw === null) return false;       // cancelled
+  if (pw !== 'rambo') { toast('Incorrect password'); return false; }
+  adminUnlocked = true;
+  clearTimeout(adminLockTimer);
+  adminLockTimer = setTimeout(function() {
+    adminUnlocked = false;
+    const it = document.getElementById('admin-nav-items');
+    const ar = document.getElementById('admin-arrow');
+    if (it) it.classList.remove('open');
+    if (ar) ar.classList.remove('open');
+    // If currently on an admin page, bounce back to the dashboard
+    const cur = document.querySelector('.page.active');
+    if (cur && ADMIN_PAGES.includes(cur.id.replace('page-',''))) {
+      switchPage('dashboard', document.querySelector('.nav-btn'));
+    }
+    toast('Admin section locked');
+  }, 5 * 60 * 1000);
+  return true;
+}
 
 function promptAdminPassword() {
   const items = document.getElementById('admin-nav-items');
@@ -4187,37 +4240,64 @@ function promptAdminPassword() {
   if (items.classList.contains('open')) {
     items.classList.remove('open');
     if (arrow) arrow.classList.remove('open');
-    adminUnlocked = false;
     return;
   }
 
-  // If session was recently unlocked (<5 min ago), skip re-auth
-  if (adminUnlocked) {
-    items.classList.add('open');
-    if (arrow) arrow.classList.add('open');
-    return;
-  }
-
-  const pw = prompt('Enter admin password to access Admin settings:');
-  if (pw === null) return;  // cancelled
-  if (pw !== 'rambo') {
-    toast('Incorrect password');
-    return;
-  }
-
-  adminUnlocked = true;
+  if (!requireAdmin()) return;
   items.classList.add('open');
   if (arrow) arrow.classList.add('open');
+}
 
-  // Auto-lock admin section after 5 minutes
-  setTimeout(function() {
-    adminUnlocked = false;
-    const it = document.getElementById('admin-nav-items');
-    const ar = document.getElementById('admin-arrow');
-    if (it) { it.classList.remove('open'); }
-    if (ar) { ar.classList.remove('open'); }
-    toast('Admin section locked');
-  }, 5 * 60 * 1000);
+// ── SKU Active/Inactive management (Settings page, admin only) ────────
+let skuActSaveTimer = null;
+
+function renderSkuActiveList() {
+  const listEl = document.getElementById('skuact-list');
+  if (!listEl) return;
+  const search = (document.getElementById('skuact-search').value || '').toLowerCase();
+  const filter = document.getElementById('skuact-filter').value;
+
+  let rows = skus.filter(s => {
+    const isActive = (typeof skuActive === 'undefined') || skuActive[s.id] !== false;
+    if (filter === 'active' && !isActive) return false;
+    if (filter === 'inactive' && isActive) return false;
+    if (search && !s.code.toLowerCase().includes(search) && !s.name.toLowerCase().includes(search)) return false;
+    return true;
+  });
+  rows.sort((a, b) => a.code.localeCompare(b.code));
+
+  const totalActive = skus.filter(s => skuActive[s.id] !== false).length;
+  document.getElementById('skuact-count').textContent =
+    rows.length + ' shown · ' + totalActive + ' active / ' + (skus.length - totalActive) + ' inactive';
+
+  listEl.innerHTML = '<table><thead><tr><th>SKU Code</th><th>SKU Name</th><th>Category</th><th style="width:110px">Status</th></tr></thead><tbody>' +
+    rows.slice(0, 500).map(s => {
+      const isActive = skuActive[s.id] !== false;
+      return `<tr style="${isActive ? '' : 'opacity:.55'}">
+        <td class="mono" style="font-size:11px">${s.code}</td>
+        <td style="font-size:12px">${s.name.split(',').slice(-1)[0].trim()}</td>
+        <td><span class="badge badge-info" style="font-size:10px">${s.cat.replace('Washing Machine','WM')}</span></td>
+        <td><button class="btn btn-sm ${isActive ? 'btn-green' : ''}" style="min-width:86px;font-size:11px${isActive ? '' : ';color:var(--muted)'}"
+          onclick="toggleSkuActive(${s.id})">${isActive ? '✓ Active' : '✗ Inactive'}</button></td>
+      </tr>`;
+    }).join('') + '</tbody></table>';
+}
+
+function toggleSkuActive(id) {
+  if (!requireAdmin()) return;           // changes save only with password
+  skuActive[id] = (skuActive[id] === false);   // flip: false→true, anything else→false
+  // Persist: local immediately, Sheet debounced (so rapid toggles batch into one save)
+  try { localStorage.setItem('inv_skuActive', JSON.stringify(skuActive)); } catch(e){}
+  clearTimeout(skuActSaveTimer);
+  skuActSaveTimer = setTimeout(function() {
+    if (SYNC_ENABLED()) {
+      sheetGet({ action: 'saveSettings', settings: { skuActive: skuActive } })
+        .then(function(){ toast('SKU status saved to Google Sheet ✓'); })
+        .catch(function(){ toast('⚠ Could not save to Sheet — change applied locally only'); });
+    }
+  }, 1200);
+  renderSkuActiveList();
+  renderAll();
 }
 
 
