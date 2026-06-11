@@ -1623,7 +1623,7 @@ let facSort={col:null,dir:1};   // facility view sort
 
 // ─── GOOGLE SHEETS SYNC CONFIG ───────────────────────────
 // Paste your Apps Script Web App URL here after deploying
-const SHEETS_URL = 'https://script.google.com/macros/s/AKfycbyv77xZU_tq22uKN6xKVYbTfveYvbojKBcYqwdObjuEVbLkXdmMufNaLgdnR7Hd4Fd-5w/exec';   // e.g. 'https://script.google.com/macros/s/ABC123/exec'
+const SHEETS_URL = 'https://script.google.com/macros/s/AKfycbxIWuL6mcZBB1c2PNP2ZdH_iCaNzI_40vB7xEiLigD58Kr1q8F1GgPhuiboPa_G_m9RhQ/exec';   // e.g. 'https://script.google.com/macros/s/ABC123/exec'
 const SYNC_ENABLED = () => SHEETS_URL.trim().length > 0;
 
 // Pending writes queue — batches updates before sending to Sheet
@@ -3139,6 +3139,77 @@ function normalizeCat(c) {
   return c || 'Washing Machine';
 }
 
+// Shared parser for SKU master lists (used by Sync SKU Master AND the
+// Bulk Upload button in Manage SKUs). Handles files with or without a
+// Status column; classifies every row against the current SKU list.
+function parseMasterRows(rows) {
+  const headers = Object.keys(rows[0] || {});
+  const codeCol = detectXlsCol(headers, ['SKU Codes','SKU Code','Code','sku codes']);
+  const descCol = detectXlsCol(headers, ['SKU Desc','SKU Description','Description','SKU Name','Name']);
+  const catCol  = detectXlsCol(headers, ['Category','Cat']);
+  const statCol = detectXlsCol(headers, ['Status','Active']);
+  if (!codeCol) return { error: 'Could not find a SKU Codes column' };
+
+  const codeMap = {};
+  skus.forEach(s => { codeMap[normCode(s.code)] = s; });
+
+  const out = { newSkus: [], deactivate: [], reactivate: [], alreadyOk: 0, inactiveSkipped: 0, hasStatusCol: !!statCol };
+  const seen = new Set();
+
+  rows.forEach(row => {
+    const code = String(row[codeCol] || '').trim();
+    if (!code || seen.has(normCode(code))) return;
+    seen.add(normCode(code));
+    const status = String(statCol ? row[statCol] : 'Active').trim().toLowerCase();
+    const isActive = status !== 'not active' && status !== 'inactive' && status !== 'no' && status !== 'false';
+    const existing = codeMap[normCode(code)];
+    if (existing) {
+      const currentlyActive = (typeof skuActive === 'undefined') || skuActive[existing.id] !== false;
+      if (!isActive && currentlyActive)      out.deactivate.push(existing);
+      else if (isActive && !currentlyActive) out.reactivate.push(existing);
+      else out.alreadyOk++;
+    } else if (isActive) {
+      out.newSkus.push({
+        code,
+        name: String(descCol ? row[descCol] : '').trim() || code,
+        cat:  normalizeCat(catCol ? row[catCol] : '')
+      });
+    } else {
+      out.inactiveSkipped++;  // not in tracker and Not Active — nothing to do
+    }
+  });
+  return out;
+}
+
+// Shared apply: adds new SKUs, flips statuses, persists locally + to Sheet.
+function applyMasterChanges(parsed) {
+  const added = [];
+  parsed.newSkus.forEach(n => {
+    const id = nextId++;
+    const sku = { id, skuid: 'SKU' + String(id).padStart(3, '0'), code: n.code, name: n.name, cat: n.cat, threshold: 21 };
+    skus.push(sku);
+    inventory[id]   = { WH: 0, DS1: 0, DS2: 0, DS3: 0 };
+    consumption[id] = { DS1: 0, DS2: 0, DS3: 0 };
+    LOCS.forEach(l => { if (inventory[id][l] === undefined) inventory[id][l] = 0; });
+    if (typeof skuActive !== 'undefined') skuActive[id] = true;
+    added.push(sku);
+  });
+  parsed.deactivate.forEach(s => { skuActive[s.id] = false; });
+  parsed.reactivate.forEach(s => { skuActive[s.id] = true; });
+
+  try {
+    localStorage.setItem('inv_skuActive', JSON.stringify(skuActive));
+    localStorage.setItem('inv_skus_cache', JSON.stringify(skus));
+  } catch(e){}
+  if (SYNC_ENABLED() && (parsed.deactivate.length || parsed.reactivate.length)) {
+    sheetGet({ action: 'saveSettings', settings: { skuActive: skuActive } }).catch(function(){});
+  }
+  syncNewSkusToSheet(added);
+  renderAll();
+  if (typeof renderSkuActiveList === 'function') renderSkuActiveList();
+  return added.length;
+}
+
 function handleMasterFile(file) {
   if (!file) return;
   if (!window.XLSX) { toast('SheetJS not loaded — check internet connection'); return; }
@@ -3148,42 +3219,11 @@ function handleMasterFile(file) {
       const wb = XLSX.read(evt.target.result, { type: 'array' });
       const rows = XLSX.utils.sheet_to_json(wb.Sheets[wb.SheetNames[0]], { defval: '' });
       if (!rows.length) { toast('File appears empty'); return; }
-      const headers = Object.keys(rows[0]);
-      const codeCol = detectXlsCol(headers, ['SKU Codes','SKU Code','Code','sku codes']);
-      const descCol = detectXlsCol(headers, ['SKU Desc','SKU Description','Description','SKU Name','Name']);
-      const catCol  = detectXlsCol(headers, ['Category','Cat']);
-      const statCol = detectXlsCol(headers, ['Status','Active']);
-      if (!codeCol) { toast('Could not find a SKU Codes column'); return; }
+      const parsed = parseMasterRows(rows);
+      if (parsed.error) { toast(parsed.error); return; }
 
-      const codeMap = {};
-      skus.forEach(s => { codeMap[normCode(s.code)] = s; });
-
-      masterNewSkus = []; masterDeactivate = []; masterReactivate = [];
-      let alreadyOk = 0, inactiveSkipped = 0;
-      const seen = new Set();
-
-      rows.forEach(row => {
-        const code = String(row[codeCol] || '').trim();
-        if (!code || seen.has(normCode(code))) return;
-        seen.add(normCode(code));
-        const status = String(statCol ? row[statCol] : 'Active').trim().toLowerCase();
-        const isActive = status !== 'not active' && status !== 'inactive' && status !== 'no' && status !== 'false';
-        const existing = codeMap[normCode(code)];
-        if (existing) {
-          const currentlyActive = (typeof skuActive === 'undefined') || skuActive[existing.id] !== false;
-          if (!isActive && currentlyActive)      masterDeactivate.push(existing);
-          else if (isActive && !currentlyActive) masterReactivate.push(existing);
-          else alreadyOk++;
-        } else if (isActive) {
-          masterNewSkus.push({
-            code,
-            name: String(descCol ? row[descCol] : '').trim() || code,
-            cat:  normalizeCat(catCol ? row[catCol] : '')
-          });
-        } else {
-          inactiveSkipped++;  // not in tracker and Not Active — nothing to do
-        }
-      });
+      masterNewSkus = parsed.newSkus; masterDeactivate = parsed.deactivate; masterReactivate = parsed.reactivate;
+      const alreadyOk = parsed.alreadyOk, inactiveSkipped = parsed.inactiveSkipped;
 
       document.getElementById('master-stats').innerHTML =
         `<span class="istat istat-green">➕ ${masterNewSkus.length} new active SKUs to add</span>` +
@@ -3232,31 +3272,9 @@ async function syncNewSkusToSheet(newSkuObjs) {
 }
 
 function applyMasterSync() {
-  const added = [];
-  masterNewSkus.forEach(n => {
-    const id = nextId++;
-    const sku = { id, skuid: 'SKU' + String(id).padStart(3, '0'), code: n.code, name: n.name, cat: n.cat, threshold: 21 };
-    skus.push(sku);
-    inventory[id]   = { WH: 0, DS1: 0, DS2: 0, DS3: 0 };
-    consumption[id] = { DS1: 0, DS2: 0, DS3: 0 };
-    LOCS.forEach(l => { if (inventory[id][l] === undefined) inventory[id][l] = 0; });
-    if (typeof skuActive !== 'undefined') skuActive[id] = true;
-    added.push(sku);
-  });
-  masterDeactivate.forEach(s => { skuActive[s.id] = false; });
-  masterReactivate.forEach(s => { skuActive[s.id] = true; });
-
-  // Persist skuActive (local + Sheet settings) and SKU cache
-  try {
-    localStorage.setItem('inv_skuActive', JSON.stringify(skuActive));
-    localStorage.setItem('inv_skus_cache', JSON.stringify(skus));
-  } catch(e){}
-  if (SYNC_ENABLED()) sheetGet({ action: 'saveSettings', settings: { skuActive: skuActive } }).catch(function(){});
-  syncNewSkusToSheet(added);
-
-  renderAll();
+  const addedCount = applyMasterChanges({ newSkus: masterNewSkus, deactivate: masterDeactivate, reactivate: masterReactivate });
   const msg = document.getElementById('master-apply-msg');
-  msg.textContent = `✓ ${added.length} added · ${masterDeactivate.length} deactivated · ${masterReactivate.length} re-activated`;
+  msg.textContent = `✓ ${addedCount} added · ${masterDeactivate.length} deactivated · ${masterReactivate.length} re-activated`;
   msg.style.opacity = 1;
   setTimeout(() => msg.style.opacity = 0, 4000);
   toast('SKU master synced');
@@ -4493,26 +4511,29 @@ function processBulkSkuFile(file) {
     try{
       const wb=XLSX.read(e.target.result,{type:'array'});
       const rows=XLSX.utils.sheet_to_json(wb.Sheets[wb.SheetNames[0]],{defval:''});
-      let added=0;
-      const addedSkus=[];
-      rows.forEach(row=>{
-        const code=String(row['SKU Code']||row['SKU Codes']||row['code']||'').trim();
-        const name=String(row['SKU Name']||row['SKU Desc']||row['name']||'').trim();
-        const cat=normalizeCat(String(row['Category']||row['cat']||'Washing Machine').trim());
-        if(!code||!name||skus.find(s=>s.code===code))return;
-        const id=nextId++;
-        const sku={id,skuid:'SKU'+String(id).padStart(3,'0'),code,name,cat,threshold:21};
-        skus.push(sku);
-        inventory[id]={WH:0,DS1:0,DS2:0,DS3:0};
-        consumption[id]={DS1:0,DS2:0,DS3:0};
-        if(typeof skuActive!=='undefined')skuActive[id]=true;
-        addedSkus.push(sku);
-        added++;
-      });
-      try{localStorage.setItem('inv_skus_cache',JSON.stringify(skus));}catch(e){}
-      syncNewSkusToSheet(addedSkus);
-      renderAll();
-      toast(added+' SKUs added');
+      if(!rows.length){toast('File appears empty');return;}
+
+      // Same logic as Sync SKU Master: adds new SKUs AND applies the
+      // Status column (Active / Not Active) to existing ones.
+      const parsed=parseMasterRows(rows);
+      if(parsed.error){toast(parsed.error);return;}
+
+      const nothing=!parsed.newSkus.length&&!parsed.deactivate.length&&!parsed.reactivate.length;
+      if(nothing){
+        toast('✓ Already up to date — all '+parsed.alreadyOk+' SKUs in this file match the tracker (no new SKUs, no status changes)');
+        return;
+      }
+
+      const summary='This file will:\n'
+        +'  • Add '+parsed.newSkus.length+' new SKUs (with 0 stock)\n'
+        +(parsed.hasStatusCol
+          ? '  • Mark '+parsed.deactivate.length+' SKUs Inactive\n  • Re-activate '+parsed.reactivate.length+' SKUs\n'
+          : '')
+        +'  • '+parsed.alreadyOk+' SKUs already in sync\n\nApply these changes?';
+      if(!confirm(summary))return;
+
+      const addedCount=applyMasterChanges(parsed);
+      toast('✓ '+addedCount+' added · '+parsed.deactivate.length+' deactivated · '+parsed.reactivate.length+' re-activated');
     }catch(e){toast('Error: '+e.message);}
   };
   reader.readAsArrayBuffer(file);
